@@ -23,82 +23,84 @@ namespace MicroEx
 		m_Asks.clear();
 	}
 
-	double OrderBook::GetBestBidPrice() const
+	std::optional<Price> OrderBook::GetBestBidValue() const
 	{
 		if (m_Bids.empty())
-			return 0.0;
+			return std::nullopt;
+
 		return m_Bids.begin()->first;
 	}
 
-	double OrderBook::GetBestAskPrice() const
+	std::optional<Price> OrderBook::GetBestAskValue() const
 	{
 		if (m_Asks.empty())
-			return 0.0;
+			return std::nullopt;
+
 		return m_Asks.begin()->first;
 	}
 
-	uint32_t OrderBook::GetBestBidQuantity() const
+	std::optional<Quantity> OrderBook::GetBestBidAmount() const
 	{
 		if (m_Bids.empty())
-			return 0;
+			return std::nullopt;
 
 		const auto& bestBidOrders = m_Bids.begin()->second;
 
-		uint32_t quantity = 0;
+		Quantity amount = 0;
 
 		for (const auto& order : bestBidOrders)
-			quantity += order.Quantity;
+			amount += order.Amount;
 
-		return quantity;
+		return amount;
 	}
 
-	uint32_t OrderBook::GetBestAskQuantity() const
+	std::optional<Quantity> OrderBook::GetBestAskAmount() const
 	{
 		if (m_Asks.empty())
 			return 0;
 
 		const auto& bestAskOrders = m_Asks.begin()->second;
 		
-		uint32_t quantity = 0;
+		Quantity amount = 0;
 	
 		for (const auto& order : bestAskOrders)
-			quantity += order.Quantity;
+			amount += order.Amount;
 		
-		return quantity;
+		return amount;
 	}
 
-	std::vector<Order> OrderBook::GetBestBids() const
+	std::optional<std::vector<Order>> OrderBook::GetBestBids() const
 	{
-		return this->GetBidsAtPrice(this->GetBestBidPrice());
+		return this->GetBidsAtPrice(m_Bids.begin()->first);
 	}
 
-	std::vector<Order> OrderBook::GetBestAsks() const
+	std::optional<std::vector<Order>> OrderBook::GetBestAsks() const
 	{
-		return this->GetAsksAtPrice(this->GetBestAskPrice());
+		return this->GetAsksAtPrice(m_Asks.begin()->first);
 	}
 
-	std::vector<Order> OrderBook::GetBidsAtPrice(double price) const
+	std::optional<std::vector<Order>> OrderBook::GetBidsAtPrice(double price) const
 	{
 		if (price <= 0.0)
-			return {};
+			return std::nullopt;
 
 		auto it = m_Bids.find(price);
 
 		if (it == m_Bids.end())
-			return {};
+			return std::nullopt;
 
 		return std::vector<Order>(it->second.begin(), it->second.end());
 	}
 
-	std::vector<Order> OrderBook::GetAsksAtPrice(double price) const
+	std::optional<std::vector<Order>> OrderBook::GetAsksAtPrice(double price) const
 	{
 		if (price <= 0.0)
-			return {};
+			return std::nullopt;
 
 		auto it = m_Asks.find(price);
 
-		if (it == m_Bids.end())
-			return {};
+		if (it == m_Asks.end())
+			return std::nullopt;
 
 		return std::vector<Order>(it->second.begin(), it->second.end());
 	}

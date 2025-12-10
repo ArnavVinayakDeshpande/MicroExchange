@@ -4,6 +4,7 @@
 #include <Timestamp.h>
 #include <unordered_map>
 #include <deque>
+#include <optional>
 
 namespace MicroEx
 {
@@ -14,8 +15,8 @@ namespace MicroEx
 		StockID StockId;
 		OrderSide Side;
 		OrderType Type;
-		double Price;
-		uint32_t Quantity;
+		Price Value;
+		Quantity Amount;
 		Timestamp TimePlaced;
 	};
 
@@ -30,18 +31,17 @@ namespace MicroEx
 			return m_TradeCallbackFunc;
 		}
 
-		double GetBestBidPrice() const;
+		std::optional<Price> GetBestBidValue() const;
+		std::optional<Price> GetBestAskValue() const;
 
-		double GetBestAskPrice() const;
+		std::optional<Quantity> GetBestBidAmount() const;
+		std::optional<Quantity> GetBestAskAmount() const;
 
-		uint32_t GetBestBidQuantity() const;
-		uint32_t GetBestAskQuantity() const;
+		std::optional<std::vector<Order>> GetBestBids() const;
+		std::optional<std::vector<Order>> GetBestAsks() const;
 
-		std::vector<Order> GetBestBids() const;
-		std::vector<Order> GetBestAsks() const;
-
-		std::vector<Order> GetBidsAtPrice(double price) const;
-		std::vector<Order> GetAsksAtPrice(double price) const;
+		std::optional<std::vector<Order>> GetBidsAtPrice(double price) const;
+		std::optional<std::vector<Order>> GetAsksAtPrice(double price) const;
 
 		void SetTradeCallbackFunc(const TradeCallbackFunc& tradeCallbackFunc)
 		{
