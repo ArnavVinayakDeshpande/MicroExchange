@@ -13,9 +13,9 @@ namespace MicroEx
 
 		~UUIDGenerator();
 
-		UUID GenerateUUID();
+		uuid_t GenerateUUID();
 
-		bool UUIDExists(UUID uuid) const;
+		bool UUIDExists(uuid_t uuid_t) const;
 
 	private:
 		UUIDGenerator();
@@ -24,7 +24,7 @@ namespace MicroEx
 		static UUIDGenerator* s_Instance;
 
 	private:
-		std::unordered_set<UUID> m_GeneratedUUIDs;
+		std::unordered_set<uuid_t> m_GeneratedUUIDs;
 	};
 
 }

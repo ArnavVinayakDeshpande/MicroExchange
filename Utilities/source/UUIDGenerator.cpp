@@ -22,25 +22,25 @@ namespace MicroEx
 		return *s_Instance;
 	}
 
-	UUID UUIDGenerator::GenerateUUID()
+	uuid_t UUIDGenerator::GenerateUUID()
 	{
 		static std::random_device rd;
 		static std::mt19937_64 gen(rd());
-		static std::uniform_int_distribution<UUID> dis(0, std::numeric_limits<UUID>::max());
+		static std::uniform_int_distribution<uuid_t> dis(0, std::numeric_limits<uuid_t>::max());
 
-		UUID newUUID;
+		uuid_t newuuid_t;
 
 		do
 		{
-			newUUID = dis(gen);
-		} while (!m_GeneratedUUIDs.insert(newUUID).second);
+			newuuid_t = dis(gen);
+		} while (!m_GeneratedUUIDs.insert(newuuid_t).second);
 
-		return newUUID;
+		return newuuid_t;
 	}
 
-	bool UUIDGenerator::UUIDExists(UUID uuid) const
+	bool UUIDGenerator::UUIDExists(uuid_t uuid_t) const
 	{
-		return m_GeneratedUUIDs.find(uuid) != m_GeneratedUUIDs.end();
+		return m_GeneratedUUIDs.find(uuid_t) != m_GeneratedUUIDs.end();
 	}
 
 }

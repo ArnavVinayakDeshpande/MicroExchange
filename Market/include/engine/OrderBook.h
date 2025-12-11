@@ -2,7 +2,7 @@
 
 #include <engine/Core.h>
 #include <Timestamp.h>
-#include <unordered_map>
+#include <map>
 #include <deque>
 #include <optional>
 
@@ -11,12 +11,12 @@ namespace MicroEx
 
 	struct MICROEX_API Order
 	{
-		OrderID Id;
-		StockID StockId;
+		order_id_t OrderID;
+		company_id_t CompanyID;
 		OrderSide Side;
 		OrderType Type;
-		Price Value;
-		Quantity Amount;
+		price_t Price;
+		quantity_t Quantity;
 		Timestamp TimePlaced;
 	};
 
@@ -31,29 +31,29 @@ namespace MicroEx
 			return m_TradeCallbackFunc;
 		}
 
-		std::optional<Price> GetBestBidValue() const;
-		std::optional<Price> GetBestAskValue() const;
+		std::optional<price_t> GetBestBidValue() const;
+		std::optional<price_t> GetBestAskValue() const;
 
-		std::optional<Quantity> GetBestBidAmount() const;
-		std::optional<Quantity> GetBestAskAmount() const;
+		std::optional<quantity_t> GetBestBidAmount() const;
+		std::optional<quantity_t> GetBestAskAmount() const;
 
 		std::optional<std::vector<Order>> GetBestBids() const;
 		std::optional<std::vector<Order>> GetBestAsks() const;
 
-		std::optional<std::vector<Order>> GetBidsAtPrice(double price) const;
-		std::optional<std::vector<Order>> GetAsksAtPrice(double price) const;
+		std::optional<std::vector<Order>> GetBidsAtPrice(price_t price_t) const;
+		std::optional<std::vector<Order>> GetAsksAtPrice(price_t price_t) const;
 
 		void SetTradeCallbackFunc(const TradeCallbackFunc& tradeCallbackFunc)
 		{
 			m_TradeCallbackFunc = tradeCallbackFunc;
 		}
 
-		OrderID PlaceOrder(const Order& order);
-		void RemoveOrder(OrderID orderId);
+		order_id_t PlaceOrder(const Order& order);
+		void RemoveOrder(order_id_t orderID);
 
 	private:
-		std::unordered_map<double, std::deque<Order>, std::greater<double>> m_Bids;
-		std::unordered_map<double, std::deque<Order>> m_Asks;
+		std::map<price_t, std::deque<Order>, std::greater<price_t>> m_Bids;
+		std::map<price_t, std::deque<Order>, std::less<price_t>> m_Asks;
 		TradeCallbackFunc m_TradeCallbackFunc;
 	};
 

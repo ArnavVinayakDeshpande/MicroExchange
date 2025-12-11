@@ -16,12 +16,12 @@
 namespace MicroEx
 {
 
-	using UUID = uint64_t;
-	using StockID = UUID;
-	using OrderID = UUID;
-	using TradeID = UUID;
-	using Price = double;
-	using Quantity = uint32_t;
+	using uuid_t = uint64_t;
+	using company_id_t = uuid_t;
+	using order_id_t = uuid_t;
+	using trade_it_t = uuid_t;
+	using price_t = double;
+	using quantity_t = uint32_t;
 
 	enum class OrderSide : uint8_t
 	{

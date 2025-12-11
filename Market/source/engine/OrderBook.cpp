@@ -23,7 +23,7 @@ namespace MicroEx
 		m_Asks.clear();
 	}
 
-	std::optional<Price> OrderBook::GetBestBidValue() const
+	std::optional<price_t> OrderBook::GetBestBidValue() const
 	{
 		if (m_Bids.empty())
 			return std::nullopt;
@@ -31,7 +31,7 @@ namespace MicroEx
 		return m_Bids.begin()->first;
 	}
 
-	std::optional<Price> OrderBook::GetBestAskValue() const
+	std::optional<price_t> OrderBook::GetBestAskValue() const
 	{
 		if (m_Asks.empty())
 			return std::nullopt;
@@ -39,34 +39,34 @@ namespace MicroEx
 		return m_Asks.begin()->first;
 	}
 
-	std::optional<Quantity> OrderBook::GetBestBidAmount() const
+	std::optional<quantity_t> OrderBook::GetBestBidAmount() const
 	{
 		if (m_Bids.empty())
 			return std::nullopt;
 
 		const auto& bestBidOrders = m_Bids.begin()->second;
 
-		Quantity amount = 0;
+		quantity_t quantity = 0;
 
 		for (const auto& order : bestBidOrders)
-			amount += order.Amount;
+			quantity += order.Quantity;
 
-		return amount;
+		return quantity;
 	}
 
-	std::optional<Quantity> OrderBook::GetBestAskAmount() const
+	std::optional<quantity_t> OrderBook::GetBestAskAmount() const
 	{
 		if (m_Asks.empty())
 			return 0;
 
 		const auto& bestAskOrders = m_Asks.begin()->second;
 		
-		Quantity amount = 0;
+		quantity_t quantity = 0;
 	
 		for (const auto& order : bestAskOrders)
-			amount += order.Amount;
+			quantity += order.Quantity;
 		
-		return amount;
+		return quantity;
 	}
 
 	std::optional<std::vector<Order>> OrderBook::GetBestBids() const
@@ -79,7 +79,7 @@ namespace MicroEx
 		return this->GetAsksAtPrice(m_Asks.begin()->first);
 	}
 
-	std::optional<std::vector<Order>> OrderBook::GetBidsAtPrice(double price) const
+	std::optional<std::vector<Order>> OrderBook::GetBidsAtPrice(price_t price) const
 	{
 		if (price <= 0.0)
 			return std::nullopt;
@@ -92,7 +92,7 @@ namespace MicroEx
 		return std::vector<Order>(it->second.begin(), it->second.end());
 	}
 
-	std::optional<std::vector<Order>> OrderBook::GetAsksAtPrice(double price) const
+	std::optional<std::vector<Order>> OrderBook::GetAsksAtPrice(price_t price) const
 	{
 		if (price <= 0.0)
 			return std::nullopt;
@@ -105,12 +105,12 @@ namespace MicroEx
 		return std::vector<Order>(it->second.begin(), it->second.end());
 	}
 
-	OrderID OrderBook::PlaceOrder(const Order& order)
+	order_id_t OrderBook::PlaceOrder(const Order& order)
 	{
-
+		return 0;
 	}
 
-	void OrderBook::RemoveOrder(OrderID orderId)
+	void OrderBook::RemoveOrder(order_id_t orderID)
 	{
 	}
 
