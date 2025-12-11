@@ -52,6 +52,10 @@ namespace MicroEx
 		void RemoveOrder(order_id_t orderID);
 
 	private:
+		order_id_t m_MatchBidOrder(Order order);
+		order_id_t m_MatchAskOrder(Order order);
+
+	private:
 		std::map<price_t, std::deque<Order>, std::greater<price_t>> m_Bids;
 		std::map<price_t, std::deque<Order>, std::less<price_t>> m_Asks;
 		TradeCallbackFunc m_TradeCallbackFunc;
