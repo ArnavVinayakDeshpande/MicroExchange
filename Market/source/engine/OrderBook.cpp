@@ -1,37 +1,24 @@
 #include <engine/OrderBook.h>
-#include <UUIDGenerator.h>
 #include <stdexcept>
 
 namespace MicroEx
 {
 
-	OrderBook::OrderBook(const TradeCallbackFunc& tradeCallbackFunc)
+	OrderBook::OrderBook()
 		:
-		m_Bids(),
 		m_Asks(),
-		m_TradeCallbackFunc(tradeCallbackFunc)
+		m_Bids(),
+		m_OrderLocations()
 	{
-		if (!m_TradeCallbackFunc)
-		{
-			throw std::invalid_argument("Trade callback function cannot be null.");
-		}
+		// TODO Log creation
 	}
 
 	OrderBook::~OrderBook()
 	{
-		m_Bids.clear();
-		m_Asks.clear();
+		// TODO Log destruction
 	}
 
-	std::optional<price_t> OrderBook::GetBestBidValue() const
-	{
-		if (m_Bids.empty())
-			return std::nullopt;
-
-		return m_Bids.begin()->first;
-	}
-
-	std::optional<price_t> OrderBook::GetBestAskValue() const
+	std::optional<price_t> OrderBook::GetBestAskPrice() const
 	{
 		if (m_Asks.empty())
 			return std::nullopt;
@@ -39,62 +26,125 @@ namespace MicroEx
 		return m_Asks.begin()->first;
 	}
 
-	std::optional<quantity_t> OrderBook::GetBestBidAmount() const
+	std::optional<price_t> OrderBook::GetBestBidPrice() const
 	{
 		if (m_Bids.empty())
 			return std::nullopt;
 
-		const auto& bestBidOrders = m_Bids.begin()->second;
-
-		quantity_t quantity = 0;
-
-		for (const auto& order : bestBidOrders)
-			quantity += order.Quantity;
-
-		return quantity;
+		return m_Bids.begin()->first;
 	}
 
-	std::optional<quantity_t> OrderBook::GetBestAskAmount() const
+	std::optional<Order> OrderBook::GetBestAsk() const
+	{
+		if (m_Asks.empty())
+			return std::nullopt;
+
+		if (m_Asks.begin()->second.empty())
+			return std::nullopt;
+
+		return m_Asks.begin()->second.front();
+	}
+
+	std::optional<Order> OrderBook::GetBestBid() const
+	{
+		if (m_Bids.empty())
+			return std::nullopt;
+
+		if (m_Bids.begin()->second.empty())
+			return std::nullopt;
+
+		return m_Bids.begin()->second.front();
+	}
+
+	std::optional<std::vector<Order>> OrderBook::GetBestAskLevel() const
+	{
+		if (m_Asks.empty())
+			return std::nullopt;
+
+		if (m_Asks.begin()->second.empty())
+			return std::nullopt;
+
+		std::vector<Order> asks;
+		asks.reserve(m_Asks.begin()->second.size());
+
+		for (const auto& a : m_Asks.begin()->second)
+		{
+			asks.emplace_back(a);
+		}
+
+		return asks;
+	}
+
+	std::optional<std::vector<Order>> OrderBook::GetBestBidLevel() const
+	{
+		if (m_Bids.empty())
+			return std::nullopt;
+
+		if (m_Bids.begin()->second.empty())
+			return std::nullopt;
+
+		std::vector<Order> bids;
+		bids.reserve(m_Bids.begin()->second.size());
+
+		for (const auto& b : m_Bids.begin()->second)
+		{
+			bids.emplace_back(b);
+		}
+
+		return bids;
+	}
+
+	quantity_t OrderBook::GetBestAskOrderSize() const
 	{
 		if (m_Asks.empty())
 			return 0;
 
-		const auto& bestAskOrders = m_Asks.begin()->second;
-		
-		quantity_t quantity = 0;
-	
-		for (const auto& order : bestAskOrders)
-			quantity += order.Quantity;
-		
-		return quantity;
+		return m_Asks.begin()->second.size();
 	}
 
-	std::optional<std::vector<Order>> OrderBook::GetBestBids() const
+	quantity_t OrderBook::GetBestBidOrderSize() const
 	{
-		return this->GetBidsAtPrice(m_Bids.begin()->first);
+		if (m_Bids.empty())
+			return 0;
+
+		return m_Bids.begin()->second.size();
 	}
 
-	std::optional<std::vector<Order>> OrderBook::GetBestAsks() const
+	quantity_t OrderBook::GetBestAskDepth() const
 	{
-		return this->GetAsksAtPrice(m_Asks.begin()->first);
+		if (m_Asks.empty())
+			return 0;
+
+		if (m_Asks.begin()->second.empty())
+			return 0;
+
+		quantity_t depth = 0;
+
+		for (const auto& orders : m_Asks.begin()->second)
+			depth += orders.Quantity;
+
+		return depth;
 	}
 
-	std::optional<std::vector<Order>> OrderBook::GetBidsAtPrice(price_t price) const
+	quantity_t OrderBook::GetBestBidDepth() const
 	{
-		if (price <= 0.0)
-			return std::nullopt;
+		if (m_Bids.empty())
+			return 0;
 
-		auto it = m_Bids.find(price);
+		if (m_Bids.begin()->second.empty())
+			return 0;
 
-		if (it == m_Bids.end())
-			return std::nullopt;
+		quantity_t depth = 0;
 
-		return std::vector<Order>(it->second.begin(), it->second.end());
+		for (const auto& orders : m_Bids.begin()->second)
+			depth += orders.Quantity;
+
+		return depth;
 	}
 
-	std::optional<std::vector<Order>> OrderBook::GetAsksAtPrice(price_t price) const
+	std::optional<std::vector<Order>> OrderBook::GetAskLevel(price_t price) const
 	{
-		if (price <= 0.0)
+		if (m_Asks.empty())
 			return std::nullopt;
 
 		auto it = m_Asks.find(price);
@@ -102,105 +152,498 @@ namespace MicroEx
 		if (it == m_Asks.end())
 			return std::nullopt;
 
-		return std::vector<Order>(it->second.begin(), it->second.end());
-	}
+		auto& book = it->second;
 
-	order_id_t OrderBook::PlaceOrder(const Order& order)
-	{
-		// Assume order is always valid, and MatchEngine handles invalid orders
+		std::vector<Order> asks;
+		asks.reserve(book.size());
 
-		// For a bid
-		if (order.Side == OrderSide::Buyer)
+		for (const auto& a : book)
 		{
-			m_MatchBidOrder(order);
-		}
-		// For a 
-		else if (order.Side == OrderSide::Seller)
-		{
-			m_MatchAskOrder(order);
+			asks.emplace_back(a);
 		}
 
-		return order.OrderID;
+		return asks;
 	}
 
-	void OrderBook::RemoveOrder(order_id_t orderID)
+	std::optional<std::vector<Order>> OrderBook::GetBidLevel(price_t price) const
 	{
+		if (m_Bids.empty())
+			return std::nullopt;
+
+		auto it = m_Bids.find(price);
+
+		if (it == m_Bids.end())
+			return std::nullopt;
+
+		auto& book = it->second;
+
+		std::vector<Order> bids;
+		bids.reserve(book.size());
+
+		for (const auto& b : book)
+		{
+			bids.emplace_back(b);
+		}
+
+		return bids;
 	}
 
-	order_id_t OrderBook::m_MatchBidOrder(Order order)
+	quantity_t OrderBook::GetAskOrderSize(price_t price) const
 	{
-		// Ensure order is really a bid
+		if (m_Asks.empty())
+			return 0;
+
+		auto it = m_Asks.find(price);
+
+		if (it == m_Asks.end())
+			return 0;
+
+		return it->second.size();
+	}
+
+	quantity_t OrderBook::GetBidOrderSize(price_t price) const
+	{
+		if (m_Bids.empty())
+			return 0;
+
+		auto it = m_Bids.find(price);
+
+		if (it == m_Bids.end())
+			return 0;
+
+		return it->second.size();
+	}
+
+	quantity_t OrderBook::GetAskDepth(price_t price) const
+	{
+		if (m_Asks.empty())
+			return 0;
+
+		auto it = m_Asks.find(price);
+
+		if (it == m_Asks.end())
+			return 0;
+
+		quantity_t depth = 0;
+
+		for (const auto& order : it->second)
+			depth += order.Quantity;
+
+		return depth;
+	}
+
+	quantity_t OrderBook::GetBidDepth(price_t price) const
+	{
+		if (m_Bids.empty())
+			return 0;
+
+		auto it = m_Bids.find(price);
+
+		if (it == m_Bids.end())
+			return 0;
+
+		quantity_t depth = 0;
+
+		for (const auto& order : it->second)
+			depth += order.Quantity;
+
+		return depth;
+	}
+
+	bool OrderBook::HasAsks() const
+	{
+		return !m_Asks.empty();
+	}
+
+	bool OrderBook::HasBids() const
+	{
+		return !m_Bids.empty();
+	}
+
+	bool OrderBook::HasAsksAtPrice(price_t price) const
+	{
+		if (m_Asks.empty())
+			return false;
+
+		return m_Asks.find(price) != m_Asks.end();
+	}
+
+	bool OrderBook::HasBidsAtPrice(price_t price) const
+	{
+		if (m_Bids.empty())
+			return false;
+
+		return m_Bids.find(price) != m_Bids.end();
+	}
+
+	bool OrderBook::InsertAsk(const Order& order)
+	{
+		// Sanitize
+		if (order.Side != OrderSide::Seller)
+			return false;
+
+		// Check quantity
+		if (order.Quantity == 0)
+			return false;
+
+		// Check price
+		if (order.Price == 0) // For now we don't accept prices that are zero
+			return false;
+
+		// Add ask order
+		m_Asks[order.Price].push_back(order);
+
+		// Add to location storage
+		m_OrderLocations[order.OrderID] = ms_OrderLocation(order.Side, order.Price, m_Asks[order.Price].end() - 1);
+
+		return true;
+	}
+
+	bool OrderBook::InsertBid(const Order& order)
+	{
+		// Sanitize
 		if (order.Side != OrderSide::Buyer)
-			return order.OrderID; // Error queue
+			return false;
 
-		// Ensure quantity of bid is greater than zero
-		while (order.Quantity > 0) // TODO Add a max iteration (max quantity in bids)
+		// Check quantity
+		if (order.Quantity == 0)
+			return false;
+
+		// Check price
+		if (order.Price == 0) // For now we don't accept prices that are zero
+			return false;
+
+		// Add bid order
+		m_Bids[order.Price].push_back(order);
+
+		// Add to location storage
+		m_OrderLocations[order.OrderID] = ms_OrderLocation(order.Side, order.Price, m_Bids[order.Price].end() - 1);
+
+		return true;
+	}
+
+	bool OrderBook::CancelAsk(order_id_t orderID)
+	{
+		if (m_Asks.empty())
+			return false; // No asks, nothing to cancel
+
+		auto locationIt = m_OrderLocations.find(orderID); 
+
+		if (locationIt == m_OrderLocations.end())
+			return false; // ID doesn't exist
+
+		auto& orderLocation = locationIt->second;
+
+		if (orderLocation.Side != OrderSide::Seller)
+			return false;
+
+		auto orderIt = m_Asks.find(orderLocation.Price);
+
+		if (orderIt == m_Asks.end())
+			return false; // No order queue for price
+
+		auto& queueBook = orderIt->second;
+
+		queueBook.erase(orderLocation.It);
+		m_OrderLocations.erase(locationIt);
+
+		// If queueBook is empty now, erase t he price level
+		if (queueBook.empty())
+			m_Asks.erase(orderIt);
+
+		return true;
+	}
+
+	bool OrderBook::CancelBid(order_id_t orderID)
+	{
+		if (m_Bids.empty())
+			return false; // No asks, nothing to cancel
+
+		auto locationIt = m_OrderLocations.find(orderID);
+
+		if (locationIt == m_OrderLocations.end())
+			return false; // ID doesn't exist
+
+		auto& orderLocation = locationIt->second;
+
+		if (orderLocation.Side != OrderSide::Buyer)
+			return false;
+
+		auto orderIt = m_Bids.find(orderLocation.Price);
+
+		if (orderIt == m_Bids.end())
+			return false; // No order queue for price
+
+		auto& queueBook = orderIt->second;
+
+		queueBook.erase(orderLocation.It);
+		m_OrderLocations.erase(locationIt);
+
+		// If queuebook is empty now, erase the price level
+		if (queueBook.empty())
+			m_Bids.erase(orderIt);
+
+		return true;
+	}
+
+	quantity_t OrderBook::ConsumeBestAsk(quantity_t quantity)
+	{
+		if (!quantity)
+			return 0;
+
+		quantity_t totalQuantityConsumed = 0;
+
+		while (quantity > 0)
 		{
-			// If there are no sellers, log and exit
+			// If there are no asks to consume, return
 			if (m_Asks.empty())
+				return totalQuantityConsumed;
+
+			auto& bestAskLevel = m_Asks.begin()->second;
+
+			// If there are asks but no more orders in the current price level
+			// remove the price level and return
+			if (bestAskLevel.empty())
 			{
-				// No sell orders, add the order to the bid order book
-				m_Bids[order.Price].push_back(order);
-				return order.OrderID;
+				// Remove price level
+				this->RemoveBestAskLevel();
+				return totalQuantityConsumed;
 			}
 
-			auto bestAskPrice = m_Asks.begin()->first;
-			auto& bestAskOrderBook = m_Asks.begin()->second;
+			auto& bestAsk = bestAskLevel.front();
 
-			// Check if bid is greater than best ask price
-			if (order.Price < bestAskPrice)
+			// Check if quantity to be consumed is less than quantity avalaible
+			if (quantity < bestAsk.Quantity)
 			{
-				// No trade takes place, add this to the bids queuebook
-				m_Bids[order.Price].push_back(order);
-
-				// Return without any transactions
-				return order.OrderID;
+				// All quantity requirements are met, and there is left over quantity
+				// in best ask so we update best ask quantity and we can just break the loop
+				totalQuantityConsumed += quantity;
+				bestAsk.Quantity -= quantity;
+				break;
 			}
 
-			// Check if there are any sellers at the best ask price
-			if (bestAskOrderBook.empty())
+			// Quantity required is equal to or greater than quantity avaiable for consumption
+			// Reduce quantity asked
+			quantity -= bestAsk.Quantity;
+
+			// Increase quantity consumed
+			totalQuantityConsumed += bestAsk.Quantity;
+
+			// Pop the exhausted best ask
+			this->RemoveBestAskOrder();
+		}
+
+		return totalQuantityConsumed;
+	}
+
+	quantity_t OrderBook::ConsumeBestBid(quantity_t quantity)
+	{
+		if (!quantity)
+			return 0;
+
+		quantity_t totalQuantityConsumed = 0;
+
+		while (quantity > 0)
+		{
+			// If there are no bids to consume, return
+			if (m_Bids.empty())
+				return totalQuantityConsumed;
+
+			auto& bestBidLevel = m_Bids.begin()->second;
+
+			// If there are bids but no more orders in the current price level
+			// remove the price level and return
+			if (bestBidLevel.empty())
 			{
-				// There are no sellers at this price point, remove this from the asks and continue the loop
-				// to the next price available 
-				m_Asks.erase(bestAskPrice);
-				continue;
+				// Remove price level
+				this->RemoveBestBidLevel();
+				return totalQuantityConsumed;
 			}
 
-			// Buyers at this stage exist
-			// Get the best ask (FIFO)
-			auto& bestAskOrder = bestAskOrderBook.front();
+			auto& bestBid = bestBidLevel.front();
 
-			// Quantity of securities traded is the minimum of quantity and avaiable stocks
-			quantity_t quantityToBeTraded = std::min(order.Quantity, bestAskOrder.Quantity);
-
-			// Commit trade at this quantity and bestAskOrder.Price
-
-			// Substract the quantityToBeTraded from order.Quantity
-			order.Quantity -= quantityToBeTraded;
-
-			// If quantity to be traded is less than quantity in bestAskOrder, we need to substract that 
-			// from the bestAskOrder
-			if (quantityToBeTraded < bestAskOrder.Quantity)
+			// Check if quantity to be consumed is less than quantity avalaible
+			if (quantity < bestBid.Quantity)
 			{
-				bestAskOrder.Quantity -= quantityToBeTraded;
-				break; // We can break here since trade has happened on entire bid order, thus no entry to bids and no reordering of asks
+				// All quantity requirements are met, and there is left over quantity
+				// in best bid so we update best bids quantity and we can just break the loop
+				totalQuantityConsumed += quantity;
+				bestBid.Quantity -= quantity;
+				break;
 			}
 
-			// If quantityToBeTraded is equal to or more than quantity in bestAskOrder, we need to 
-			// pop the list to get the next best order
-			bestAskOrderBook.pop_front();
+			// Quantity required is equal to or greater than quantity avaiable for consumption
+			// Reduce quantity bid
+			quantity -= bestBid.Quantity;
 
-			// If this pop makes the orderbook empty, we check it in the next iteration
-			// if it exists we complete the trade
-			// if it doesn't we pop the price and get the quebook for the next price
-			// this cycle continues until we either have asks that do not match the bids, or all ask orders are finished
-			// upon which if any quantity of the bids remain, we just add it to the bid order.
+			// Increase quantity consumed
+			totalQuantityConsumed += bestBid.Quantity;
+
+			// Pop the exhausted best bid
+			this->RemoveBestBidOrder();
+		}
+
+		return totalQuantityConsumed;
+	}
+
+	void OrderBook::RemoveBestAskOrder()
+	{
+		// Make sure ask isn't empty
+		if (m_Asks.empty())
+			return;
+
+		auto bestAsksIt = m_Asks.begin(); 
+
+		// If the best ask level is empty, just pop the price
+		if (bestAsksIt->second.empty())
+		{
+			m_Asks.erase(bestAsksIt);
+
+			// Here we don't need to update OrderLocations since the ask level was empty already
+			return;
+		}
+
+		// Pop the best ask
+		// Get the order id
+		order_id_t id = bestAsksIt->second.front().OrderID;
+
+		// Update order locations
+		auto it = m_OrderLocations.find(id);
+
+		if (it == m_OrderLocations.end())
+		{
+			// Something has seriously gone wrong
+			// log into error
+			// return
+			throw std::runtime_error("Corrupted Order Location Book and Asks Order Book");
+		}
+
+		// Pop
+		bestAsksIt->second.pop_front();
+		
+		// Remove from order locations
+		m_OrderLocations.erase(it);
+
+		// Check if price level is empty now
+		if (bestAsksIt->second.empty())
+		{
+			m_Asks.erase(bestAsksIt);
+
+			// We don't need to return here since we should log and then return after removal
+		}
+
+		// Log
+
+		return;
+	}
+
+	void OrderBook::RemoveBestBidOrder()
+	{
+		// Make sure bid isn't empty
+		if (m_Bids.empty())
+			return;
+
+		auto bestBidsIt = m_Bids.begin();
+
+		// If the best bid level is empty, just pop the price
+		if (bestBidsIt->second.empty())
+		{
+			m_Bids.erase(bestBidsIt);
+
+			// Here we don't need to update OrderLocations since the bid level was empty already
+			return;
+		}
+
+		// Pop the best bid
+		// Get the order id
+		order_id_t id = bestBidsIt->second.front().OrderID;
+
+		// Update order locations
+		auto it = m_OrderLocations.find(id);
+
+		if (it == m_OrderLocations.end())
+		{
+			// Something has seriously gone wrong
+			// log into error
+			// return
+			throw std::runtime_error("Corrupted Order Location Book and Bids Order Book");
+		}
+
+		// pop
+		bestBidsIt->second.pop_front();
+
+		// Remove from order locations
+		m_OrderLocations.erase(it);
+
+		// Check if price level is empty now
+		if (bestBidsIt->second.empty())
+		{
+			m_Bids.erase(bestBidsIt);
+
+			// We don't need to return here since we should log and then return after removal
+		}
+
+		// Log
+
+		return;
+	}
+
+	void OrderBook::RemoveBestAskLevel()
+	{
+		// Make sure asks isn't empty
+		if (m_Asks.empty())
+			return;
+
+		auto bestAsksIt = m_Asks.begin();
+
+		const price_t price = bestAsksIt->first;
+
+		while (!m_Asks.empty() && m_Asks.begin()->first == price)
+			this->RemoveBestAskOrder();
+	}
+
+	void OrderBook::RemoveBestBidLevel()
+	{
+		// Make sure bids isn't empty
+		if (m_Bids.empty())
+			return;
+
+		auto bestBidsIt = m_Bids .begin();
+
+		const price_t price = bestBidsIt->first;
+
+		while (!m_Bids.empty() && m_Bids.begin()->first == price)
+			this->RemoveBestBidOrder();
+	}
+
+	void OrderBook::RemoveAskLevel(price_t price)
+	{
+		auto it = m_Asks.find(price);
+
+		if (it == m_Asks.end())
+			return;
+
+		while (m_Asks.find(price) != m_Asks.end())
+		{
+			auto& q = m_Asks[price];
+
+			this->CancelAsk(q.front().OrderID);
 		}
 	}
 
-	order_id_t OrderBook::m_MatchAskOrder(Order order)
+	void OrderBook::RemoveBidLevel(price_t price)
 	{
+		auto it = m_Bids.find(price);
 
+		if (it == m_Bids.end())
+			return;
+
+		while (m_Bids.find(price) != m_Bids.end())
+		{
+			auto& q = m_Bids[price];
+
+			this->CancelBid(q.front().OrderID);
+		}
 	}
 
 }

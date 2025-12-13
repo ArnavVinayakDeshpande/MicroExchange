@@ -3,6 +3,7 @@
 #include <engine/Core.h>
 #include <Timestamp.h>
 #include <map>
+#include <unordered_map>
 #include <deque>
 #include <optional>
 
@@ -23,42 +24,77 @@ namespace MicroEx
 	class MICROEX_API OrderBook
 	{
 	public:
-		OrderBook(const TradeCallbackFunc& tradeCallbackFunc);
+		OrderBook();
 		~OrderBook();
 
-		const TradeCallbackFunc& GetTradeCallbackFunc() const
-		{
-			return m_TradeCallbackFunc;
-		}
+		std::optional<price_t> GetBestAskPrice() const;
+		std::optional<price_t> GetBestBidPrice() const;
 
-		std::optional<price_t> GetBestBidValue() const;
-		std::optional<price_t> GetBestAskValue() const;
+		std::optional<Order> GetBestAsk() const;
+		std::optional<Order> GetBestBid() const;
 
-		std::optional<quantity_t> GetBestBidAmount() const;
-		std::optional<quantity_t> GetBestAskAmount() const;
+		std::optional<std::vector<Order>> GetBestAskLevel() const;
+		std::optional<std::vector<Order>> GetBestBidLevel() const;
 
-		std::optional<std::vector<Order>> GetBestBids() const;
-		std::optional<std::vector<Order>> GetBestAsks() const;
+		quantity_t GetBestAskOrderSize() const;
+		quantity_t GetBestBidOrderSize() const;
 
-		std::optional<std::vector<Order>> GetBidsAtPrice(price_t price_t) const;
-		std::optional<std::vector<Order>> GetAsksAtPrice(price_t price_t) const;
+		quantity_t GetBestAskDepth() const;
+		quantity_t GetBestBidDepth() const;
 
-		void SetTradeCallbackFunc(const TradeCallbackFunc& tradeCallbackFunc)
-		{
-			m_TradeCallbackFunc = tradeCallbackFunc;
-		}
+		std::optional<std::vector<Order>> GetAskLevel(price_t price) const;
+		std::optional<std::vector<Order>> GetBidLevel(price_t price) const;
 
-		order_id_t PlaceOrder(const Order& order);
-		void RemoveOrder(order_id_t orderID);
+		quantity_t GetAskOrderSize(price_t price) const;
+		quantity_t GetBidOrderSize(price_t price) const;
+
+		quantity_t GetAskDepth(price_t price) const;
+		quantity_t GetBidDepth(price_t price) const;
+
+		bool HasAsks() const;
+		bool HasBids() const;
+
+		bool HasAsksAtPrice(price_t price) const;
+		bool HasBidsAtPrice(price_t price) const;
+
+		bool InsertAsk(const Order& order);
+		bool InsertBid(const Order& order);
+
+		bool CancelAsk(order_id_t orderID);
+		bool CancelBid(order_id_t orderID);
+
+		quantity_t ConsumeBestAsk(quantity_t quantity);
+		quantity_t ConsumeBestBid(quantity_t quantity);
+
+		void RemoveBestAskOrder();
+		void RemoveBestBidOrder();
+
+		void RemoveBestAskLevel();
+		void RemoveBestBidLevel();
+
+		void RemoveAskLevel(price_t price);
+		void RemoveBidLevel(price_t price);
 
 	private:
-		order_id_t m_MatchBidOrder(Order order);
-		order_id_t m_MatchAskOrder(Order order);
+		struct ms_OrderLocation
+		{
+			OrderSide Side;
+			price_t Price;
+			std::deque<Order>::iterator It;
+
+			ms_OrderLocation(OrderSide side, price_t price, std::deque<Order>::iterator it)
+				:
+				Side(side),
+				Price(price),
+				It(std::move(it))
+			{
+			}
+		};
 
 	private:
-		std::map<price_t, std::deque<Order>, std::greater<price_t>> m_Bids;
 		std::map<price_t, std::deque<Order>, std::less<price_t>> m_Asks;
-		TradeCallbackFunc m_TradeCallbackFunc;
+		std::map<price_t, std::deque<Order>, std::greater<price_t>> m_Bids;
+		std::unordered_map<order_id_t, ms_OrderLocation> m_OrderLocations;
 	};
 
 }
