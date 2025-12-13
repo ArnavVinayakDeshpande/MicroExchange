@@ -1,0 +1,55 @@
+TODO / SUGGESTIVE TASKS (Non-Critical)
+
+This file documents non-critical, improvement-oriented TODOs for the OrderBook and surrounding engine components. None of these block correctness, but they improve robustness, maintainability, and extensibility.
+
+1. Documentation & Project Hygiene
+
+
+
+
+2. Logging System (Non-Critical)
+
+
+
+
+3. Error Handling System
+
+
+
+
+4. Time / Timespan System
+
+
+
+
+5. Performance & Data Structure Improvements
+
+
+
+
+6. Code Duplication & Refactoring
+
+
+
+
+7. Safety & Invariants
+
+
+
+
+8. Testing (Non-Critical but Important)
+
+
+
+
+9. API & Semantics Clarity
+
+
+
+
+10. Future Extensions (Optional)
+
+
+
+
+NOTE: None of the above TODOs block correctness of the current OrderBook. They exist to improve clarity, safety, performance, and long-term maintainability.

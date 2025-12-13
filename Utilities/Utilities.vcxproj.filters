@@ -29,7 +29,7 @@
     <ClCompile Include="source\Logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\UUIDGeneraetor.cpp">
+    <ClCompile Include="source\UUIDGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\Timestamp.cpp">

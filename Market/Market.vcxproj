@@ -71,20 +71,20 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\</OutDir>
-    <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -166,6 +166,11 @@
     <ClInclude Include="include\market\CompanyRegistry.h" />
     <ClInclude Include="include\market\Market.h" />
     <ClInclude Include="include\market\MarketBroadcaster.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.gitattributes" />
+    <None Include="..\.gitignore" />
+    <None Include="..\README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
