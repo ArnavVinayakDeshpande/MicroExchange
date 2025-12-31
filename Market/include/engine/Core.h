@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <fstream>
 
 #if defined(MICROEX_BUILD_SHARED)
 	#if defined(MICROEX_SOURCE)
@@ -33,6 +34,14 @@ namespace MicroEx
 	{
 		Market,
 		Limit
+	};
+
+	enum class OrderStatus : uint16_t
+	{
+		None,
+		Filled,
+		PartiallyFilled,
+		NoFilled
 	};
 
 	class Trade;

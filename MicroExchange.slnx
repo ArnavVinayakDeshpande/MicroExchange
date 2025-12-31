@@ -8,5 +8,6 @@
   </Folder>
   <Project Path="Examples/Examples.vcxproj" Id="ca85ab31-64af-40ed-b73c-989281d5bde9" />
   <Project Path="Market/Market.vcxproj" Id="3d3c7a55-2b16-4bd9-afef-14b15de8006e" />
+  <Project Path="spdlog/spdlog.vcxproj" Id="06a007b6-6694-41dc-b07b-b88212b11c5e" />
   <Project Path="Utilities/Utilities.vcxproj" Id="59d2c45e-fb22-4c8d-bc0b-9dbd450a1dc1" />
 </Solution>

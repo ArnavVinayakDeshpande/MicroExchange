@@ -30,8 +30,8 @@ namespace MicroEx
 		std::optional<price_t> GetBestAskPrice() const;
 		std::optional<price_t> GetBestBidPrice() const;
 
-		std::optional<Order> GetBestAsk() const;
-		std::optional<Order> GetBestBid() const;
+		std::optional<Order> GetBestAskOrder() const;
+		std::optional<Order> GetBestBidOrder() const;
 
 		std::optional<std::vector<Order>> GetBestAskLevel() const;
 		std::optional<std::vector<Order>> GetBestBidLevel() const;
@@ -50,6 +50,8 @@ namespace MicroEx
 
 		quantity_t GetAskDepth(price_t price) const;
 		quantity_t GetBidDepth(price_t price) const;
+
+		std::optional<Order> FindOrder(order_id_t orderID) const;
 
 		bool HasAsks() const;
 		bool HasBids() const;
@@ -80,9 +82,17 @@ namespace MicroEx
 		{
 			OrderSide Side;
 			price_t Price;
-			std::deque<Order>::iterator It;
+			std::optional<std::deque<Order>::iterator> It;
 
-			ms_OrderLocation(OrderSide side, price_t price, std::deque<Order>::iterator it)
+			ms_OrderLocation() // TODO Proper Default Constructor
+				:
+				Side(OrderSide::Buyer),
+				Price(0),
+				It(std::nullopt) // Make It an optional
+			{
+			}
+
+			ms_OrderLocation(OrderSide side, price_t price, std::optional<std::deque<Order>::iterator> it)
 				:
 				Side(side),
 				Price(price),

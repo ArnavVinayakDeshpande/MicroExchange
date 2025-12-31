@@ -34,7 +34,7 @@ namespace MicroEx
 		return m_Bids.begin()->first;
 	}
 
-	std::optional<Order> OrderBook::GetBestAsk() const
+	std::optional<Order> OrderBook::GetBestAskOrder() const
 	{
 		if (m_Asks.empty())
 			return std::nullopt;
@@ -45,7 +45,7 @@ namespace MicroEx
 		return m_Asks.begin()->second.front();
 	}
 
-	std::optional<Order> OrderBook::GetBestBid() const
+	std::optional<Order> OrderBook::GetBestBidOrder() const
 	{
 		if (m_Bids.empty())
 			return std::nullopt;
@@ -250,6 +250,27 @@ namespace MicroEx
 		return depth;
 	}
 
+	std::optional<Order> OrderBook::FindOrder(order_id_t orderID) const
+	{
+		auto it = m_OrderLocations.find(orderID);
+
+		if (it == m_OrderLocations.end())
+			return std::nullopt;
+
+		const auto& locationOpt = it->second.It;
+
+		if (!locationOpt.has_value())
+		{
+			// Invariance broken
+			throw std::logic_error("Invariance of order book broken.");
+			// TODO Error Handling
+		}
+
+		auto location = locationOpt.value();
+
+		return *location;
+	}
+
 	bool OrderBook::HasAsks() const
 	{
 		return !m_Asks.empty();
@@ -334,6 +355,13 @@ namespace MicroEx
 
 		auto& orderLocation = locationIt->second;
 
+		if (!orderLocation.It)
+		{
+			// We don't have order location, 
+			// TODO Handle this error more gracefully
+			throw std::runtime_error("No valid location for given ask found.");
+		}
+
 		if (orderLocation.Side != OrderSide::Seller)
 			return false;
 
@@ -344,7 +372,7 @@ namespace MicroEx
 
 		auto& queueBook = orderIt->second;
 
-		queueBook.erase(orderLocation.It);
+		queueBook.erase(orderLocation.It.value());
 		m_OrderLocations.erase(locationIt);
 
 		// If queueBook is empty now, erase t he price level
@@ -366,6 +394,12 @@ namespace MicroEx
 
 		auto& orderLocation = locationIt->second;
 
+		if (!orderLocation.It)
+		{
+			// TODO Handle this error more gracefully
+			throw std::runtime_error("No valid location for bid found.");
+		}
+
 		if (orderLocation.Side != OrderSide::Buyer)
 			return false;
 
@@ -376,7 +410,7 @@ namespace MicroEx
 
 		auto& queueBook = orderIt->second;
 
-		queueBook.erase(orderLocation.It);
+		queueBook.erase(orderLocation.It.value());
 		m_OrderLocations.erase(locationIt);
 
 		// If queuebook is empty now, erase the price level

@@ -52,4 +52,7 @@ This file documents non-critical, improvement-oriented TODOs for the OrderBook a
 
 
 
+11. Change const_iterator to const ref to ms_Companies in CompanyRegistry::m_GetDescriptor.
+
+
 NOTE: None of the above TODOs block correctness of the current OrderBook. They exist to improve clarity, safety, performance, and long-term maintainability.

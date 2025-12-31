@@ -5,59 +5,6 @@
 namespace MicroEx
 {
 
-	std::vector<uint8_t> SerializeData(const Company& company)
-	{
-		std::vector<uint8_t> data;
-
-		// Serialize Name
-		{
-			// Add length of name
-			uint32_t length = company.Name.size();
-			uint8_t* lengthPtr = reinterpret_cast<uint8_t*>(&length);
-		
-			data.insert(data.end(), lengthPtr, lengthPtr + sizeof(uint32_t));
-			data.insert(data.end(), company.Name.begin(), company.Name.end());
-		}
-
-		// Serialize Symbol
-		{
-			// Add length of symbol
-			uint32_t length = company.Symbol.size();
-			uint8_t* lengthPtr = reinterpret_cast<uint8_t*>(&length);
-
-			data.insert(data.end(), lengthPtr, lengthPtr + sizeof(uint32_t));
-			data.insert(data.end(), company.Symbol.begin(), company.Symbol.end());
-		}
-
-		// Serialize company_id_t
-		{
-			const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&company.ID);
-
-			data.insert(data.end(), ptr, ptr + sizeof(company_id_t));
-		}
-
-		// Serialize Join Date
-		{
-			int64_t value = 
-				std::chrono::duration_cast<std::chrono::microseconds>(
-					company.JoinDate.time_since_epoch()).count();
-
-			uint8_t* ptr = reinterpret_cast<uint8_t*>(&value);
-
-			data.insert(data.end(), ptr, ptr + sizeof(int64_t));
-		}
-
-		return data;
-	}
-
-	std::optional<Company> DeserializeData(const std::vector<uint8_t>& data)
-	{
-		if (data.empty())
-			return std::nullopt;
-
-		//static_assert(false, "TODO");
-	}
-
 	CompanyRegistry::CompanyRegistry()
 	{
 	}
@@ -66,93 +13,175 @@ namespace MicroEx
 	{
 	}
 
-	std::optional<Company> CompanyRegistry::GetCompanyByID(company_id_t id) const
+	using CDesc = CompanyDescriptor;
+
+	std::optional<CDesc> CompanyRegistry::GetCompanyByID(company_id_t id) const
 	{
 		auto it = m_Companies.find(id);
 
 		if (it == m_Companies.end())
 			return std::nullopt;
 
-		return it->second;
+		return m_GetDescriptor(it->second );
 	}
 
-	std::optional<Company> CompanyRegistry::GetCompanyByName(const std::string& name) const
+	std::optional<CDesc> CompanyRegistry::GetCompanyByName(const std::string& name) const
 	{
-		for (const auto& company : m_Companies)
-		{
-			if (name == company.second.Name)
-				return company.second;
-		}
+		auto it = m_NameIndex.find(name);
 
-		return std::nullopt;
-	}
-
-	std::optional<Company> CompanyRegistry::GetCompanyBySymbol(const std::string& symbol) const
-	{
-		for (const auto& company : m_Companies)
-		{
-			if (symbol == company.second.Symbol)
-				return company.second;
-		}
-
-		return std::nullopt;
-	}
-
-	std::optional<company_id_t> CompanyRegistry::AddCompany(const std::string& name, const std::string& symbol)
-	{
-		if (name.empty() || symbol.empty())
+		if (it == m_NameIndex.end())
 			return std::nullopt;
 
-		// Check if company with name or symbol already exists
-		// TODO Change exceptions to error handling later on, add an error queue since we 
-		// will be returning optionals we can add this to error queue.
-		for (const auto& company : m_Companies)
+		auto id_it = m_Companies.find(it->second);
+
+		if (id_it == m_Companies.end())
 		{
-			const auto& c = company.second;
-			 
-			if (c.Name == name)
-				throw std::invalid_argument("Company with given name already exists with Stock ID: " + std::to_string(c.ID));
-		
-			if (c.Symbol == symbol)
-				throw std::invalid_argument("Company with given ticker symbol already exists with Stock ID: " + std::to_string(c.ID));
+			// Invariance broken
+			// TODO Error Handling
+			throw std::logic_error("Invariance in Company Registry broken.");
 		}
 
-		// Get a new stock id
-		company_id_t id = UUIDGenerator::GetInstance().GenerateUUID();
-		
-		// Since IDs are guaranteed to be universally unique under the current implementation
-		// we can directly add it using the [] operator
-		m_Companies[id] = Company(id, name, symbol, std::chrono::system_clock::now());
+		// TODO Wonder whether I should crosscheck name given with name stored in company in companies
+
+		return m_GetDescriptor(id_it->second);
+	}
+
+	std::optional<CDesc> CompanyRegistry::GetCompanyByTicker(const std::string& ticker) const
+	{
+		auto it = m_TickerIndex.find(ticker);
+
+		if (it == m_TickerIndex.end())
+			return std::nullopt;
+
+		auto id_it = m_Companies.find(it->second);
+
+		if (id_it == m_Companies.end())
+		{
+			// Invariance boroken
+			// TODO Error Handling
+			throw std::logic_error("Invariance in Company Registry broken.");
+		}
+
+		// TODO Wonder whether I should crosscheck ticker
+
+		return m_GetDescriptor(id_it->second);
+	}
+
+	std::optional<std::vector<company_id_t>> CompanyRegistry::GetAllCompanyIDs() const
+	{
+		if (m_Companies.empty())
+			return std::nullopt;
+
+		std::vector<company_id_t> ids;
+		ids.reserve(m_Companies.size());
+
+		for (const auto& [key, _] : m_Companies)
+			ids.emplace_back(key);
+
+		return ids;
+	}
+
+	std::optional<std::vector<std::string>> CompanyRegistry::GetAllCompanyNames() const
+	{
+		if (m_Companies.empty())
+			return std::nullopt;
+
+		std::vector<std::string> names;
+		names.reserve(m_Companies.size()); // Even though we have name idx, we treate m_Companies as the main and correct registry
 	
-		return id;
+		for (const auto& [_, company] : m_Companies)
+			names.emplace_back(company.Name);
+
+		return names;
 	}
 
-	bool CompanyRegistry::RemoveCompanyByID(company_id_t id)
+	std::optional<std::vector<std::string>> CompanyRegistry::GetAllCompanyTickers() const
 	{
-		bool removed = static_cast<bool>(m_Companies.erase(id));
+		if (m_Companies.empty())
+			return std::nullopt;
 
-		// Add later to log queues if existed or not, no need to add this to error queue
-		return removed;
+		std::vector<std::string> tickers;
+		tickers.reserve(m_Companies.size()); // EVen though we have ticker idx, we treate m_Companies as the main and correct registry
+
+		for (const auto& [_, company] : m_Companies)
+			tickers.emplace_back(company.Ticker);
+
+		return tickers;
 	}
 
-	bool CompanyRegistry::RemoveCompanyByName(const std::string& name)
+	std::optional<std::vector<CDesc>> CompanyRegistry::GetAllCompanies() const
 	{
-		auto opt = this->GetCompanyByName(name);
+		if (m_Companies.empty())
+			return std::nullopt;
 
-		if (!opt.has_value())
-			return false; // error queue
+		std::vector<CDesc> companies;
+		companies.reserve(m_Companies.size());
 
-		return this->RemoveCompanyByID(opt->ID);
+		for (auto it = m_Companies.begin(); it != m_Companies.end(); ++it)
+			companies.emplace_back(m_GetDescriptor(it->second));
+
+		return companies;
 	}
 
-	bool CompanyRegistry::RemoveCompanyBySymbol(const std::string& symbol)
+	size_t CompanyRegistry::GetRegistrySize() const
 	{
-		auto opt = this->GetCompanyBySymbol(symbol);
+		return m_Companies.size();
+	}
 
-		if (!opt.has_value())
-			return false; // error queue
+	company_id_t CompanyRegistry::AddCompany(const std::string& name, const std::string& ticker, const Timestamp& joinDate)
+	{
+		// TODO Name UNiquness -> Ticker Uniqueness -> ID Generation
+	
+		if (name.empty() || ticker.empty())
+		{
+			return 0; // TODO: return invalid here, returning 0 for now
+		}
 
-		return this->RemoveCompanyByID(opt->ID);
+		if (IsCompanyPresentByName(name))
+		{
+			return 0; // TODO: return invalid here + log, returning 0 for now
+		}
+
+		if (IsCompanyPresentByTicker(ticker))
+		{
+			return 0; // TODO: return invalid here + log, returning 0 for now
+		}
+
+		company_id_t idGenerated = CompanyRegistry::GenerateID(name, ticker);
+
+		// Check for invalid id here
+
+		// Update company registry
+		m_Companies[idGenerated] = ms_Company(idGenerated, name, ticker, joinDate);
+
+		// Update name index
+		m_NameIndex[name] = idGenerated;
+
+		// Update ticker index
+		m_TickerIndex[ticker] = idGenerated;
+
+		return idGenerated;
+	}
+
+	void CompanyRegistry::RemoveCompany(company_id_t id)
+	{
+		// Check if id is invalid here
+
+		// Check if id exists
+		auto it = m_Companies.find(id);
+
+		if (it == m_Companies.end())
+			return;
+
+		// Company does exist, remove it
+		// Remove it from name index
+		m_NameIndex.erase(it->second.Name);
+		
+		// Remove it from ticker index
+		m_TickerIndex.erase(it->second.Ticker);
+
+		// Remove it from registry
+		m_Companies.erase(it);
 	}
 
 	bool CompanyRegistry::IsCompanyPresentByID(company_id_t id) const
@@ -162,24 +191,55 @@ namespace MicroEx
 
 	bool CompanyRegistry::IsCompanyPresentByName(const std::string& name) const
 	{
-		for (const auto& company : m_Companies)
-		{
-			if (name == company.second.Name)
-				return true;
-		}
-
-		return false;
+		return m_NameIndex.find(name) != m_NameIndex.end();
 	}
 
-	bool CompanyRegistry::IsCompanyPresentBySymbol(const std::string& symbol) const
+	bool CompanyRegistry::IsCompanyPresentByTicker(const std::string& ticker) const
 	{
-		for (const auto& company : m_Companies)
-		{
-			if (symbol == company.second.Symbol)
-				return true;
-		}
+		return m_TickerIndex.find(ticker) != m_TickerIndex.end();
+	}
 
-		return false;
+	bool CompanyRegistry::Empty() const
+	{
+		return m_Companies.empty();
+	}
+
+	auto CompanyRegistry::begin() const
+	{
+		return m_Companies.begin();
+	}
+
+	auto CompanyRegistry::end() const
+	{
+		return m_Companies.end();
+	}
+
+	company_id_t CompanyRegistry::GenerateID(const std::string& name, const std::string& ticker)
+	{
+		return 0; // TODO
+	}
+
+	company_id_t CompanyRegistry::operator<<(const CompanyDescriptor& desc)
+	{
+		return this->AddCompany(desc.m_Name, desc.m_Ticker, desc.m_JoinDate);
+	}
+
+	void CompanyRegistry::operator>>(company_id_t id)
+	{
+		return this->RemoveCompany(id);
+	}
+
+	std::optional<CompanyDescriptor> CompanyRegistry::operator[](company_id_t id) const
+	{
+		return this->GetCompanyByID(id);
+	}
+
+	CompanyDescriptor CompanyRegistry::m_GetDescriptor(const ms_Company& company) const
+	{
+		CompanyDescriptor descriptor(company.Name, company.Ticker, company.JoinDate);
+		descriptor.m_ID = company.ID;
+
+		return descriptor;
 	}
 
 }

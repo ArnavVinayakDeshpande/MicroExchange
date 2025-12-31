@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{59d2c45e-fb22-4c8d-bc0b-9dbd450a1dc1}</ProjectGuid>
-    <RootNamespace>Utilities</RootNamespace>
+    <ProjectGuid>{06a007b6-6694-41dc-b07b-b88212b11c5e}</ProjectGuid>
+    <RootNamespace>spdlog</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -73,27 +73,31 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\$(ProjectName)\</IntDir>
+    <IncludePath>E:\dev\MicroExchange\spdlog\spdlog\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\$(ProjectName)\</IntDir>
+    <IncludePath>E:\dev\MicroExchange\spdlog\spdlog\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\$(ProjectName)\</IntDir>
+    <IncludePath>E:\dev\MicroExchange\spdlog\spdlog\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)Build\$(Configuration)-$(Platform)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)Build-Int\$(Configuration)-$(Platform)\$(ProjectName)\</IntDir>
+    <IncludePath>E:\dev\MicroExchange\spdlog\spdlog\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>MICROEX_ENABLE_LOGGING;MICROEX_DEBUG_BUILD;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SPDLOG_HEADER_ONLY;SPDLOG_NO_EXCEPTIONS;SPDLOG_COMPILED_LIB</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Utilities\include;$(SolutionDir)Market\include;$(SolutionDir)Spdlog\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDIr)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -107,10 +111,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>MICROEX_ENABLE_LOGGING;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SPDLOG_HEADER_ONLY;SPDLOG_NO_EXCEPTIONS;SPDLOG_COMPILED_LIB</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Utilities\include;$(SolutionDir)Market\include;$(SolutionDir)Spdlog\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDIr)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -122,10 +126,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>MICROEX_ENABLE_LOGGING;MICROEX_DEBUG_BUILD;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SPDLOG_HEADER_ONLY;SPDLOG_NO_EXCEPTIONS;SPDLOG_COMPILED_LIB</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Utilities\include;$(SolutionDir)Market\include;$(SolutionDir)Spdlog\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDIr)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -139,10 +143,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>MICROEX_ENABLE_LOGGING;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SPDLOG_HEADER_ONLY;SPDLOG_NO_EXCEPTIONS;SPDLOG_COMPILED_LIB</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Utilities\include;$(SolutionDir)Market\include;$(SolutionDir)Spdlog\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDIr)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -151,14 +155,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\Logger.h" />
-    <ClInclude Include="include\Timestamp.h" />
+    <ClInclude Include="spdlog\include\spdlog\async.h" />
+    <ClInclude Include="spdlog\include\spdlog\async_logger-inl.h" />
+    <ClInclude Include="spdlog\include\spdlog\async_logger.h" />
+    <ClInclude Include="spdlog\include\spdlog\common-inl.h" />
+    <ClInclude Include="spdlog\include\spdlog\common.h" />
+    <ClInclude Include="spdlog\include\spdlog\formatter.h" />
+    <ClInclude Include="spdlog\include\spdlog\fwd.h" />
+    <ClInclude Include="spdlog\include\spdlog\logger-inl.h" />
+    <ClInclude Include="spdlog\include\spdlog\logger.h" />
+    <ClInclude Include="spdlog\include\spdlog\mdc.h" />
+    <ClInclude Include="spdlog\include\spdlog\pattern_formatter-inl.h" />
+    <ClInclude Include="spdlog\include\spdlog\pattern_formatter.h" />
+    <ClInclude Include="spdlog\include\spdlog\spdlog-inl.h" />
+    <ClInclude Include="spdlog\include\spdlog\spdlog.h" />
+    <ClInclude Include="spdlog\include\spdlog\stopwatch.h" />
+    <ClInclude Include="spdlog\include\spdlog\tweakme.h" />
+    <ClInclude Include="spdlog\include\spdlog\version.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="include\UUIDGenerator.h" />
-    <ClCompile Include="source\Logger.cpp" />
-    <ClCompile Include="source\Timestamp.cpp" />
-    <ClCompile Include="source\UUIDGenerator.cpp" />
+    <ClCompile Include="spdlog\src\async.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
