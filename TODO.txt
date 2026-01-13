@@ -55,4 +55,14 @@ This file documents non-critical, improvement-oriented TODOs for the OrderBook a
 11. Change const_iterator to const ref to ms_Companies in CompanyRegistry::m_GetDescriptor.
 
 
+12. Find a way to deal with MatchEngine's storage of market prices and original company registry invariance.
+
+13. Decide whether to custom reveal order book functions in match engine or expost a const reference to the order book.
+
+14. Implement default constructors properly.
+
+15. Implement invalid states / values for stuff.
+
+16. Find a way around dual conversion in Price == double in Price class.
+
 NOTE: None of the above TODOs block correctness of the current OrderBook. They exist to improve clarity, safety, performance, and long-term maintainability.

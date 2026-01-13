@@ -1,7 +1,16 @@
+/**
+ * @file Market/include/engine/OrderBook.h
+ * @author Arnav Deshpande
+ * 
+ * This file contains implementation for Orders and for the OrderBook used in the market.
+ */
+
 #pragma once
 
-#include <engine/Core.h>
+#include <core/Core.h>
 #include <Timestamp.h>
+#include <core/Price.h>
+
 #include <map>
 #include <unordered_map>
 #include <deque>
@@ -10,17 +19,44 @@
 namespace MicroEx
 {
 
+	/**
+	 * @struct Order
+	 * 
+	 * @brief Represents an Order in the Market.
+	 * 
+	 * Represents and stores metadata of an order that is placed in the market.
+	 */
 	struct MICROEX_API Order
 	{
+		/// Identifer of the order.
 		order_id_t OrderID;
+
+		// Identifer of the company whose securities the order has been placed for.
 		company_id_t CompanyID;
+
+		/// Side of the buyer i.e. Seller or Buyer.
 		OrderSide Side;
+
+		/// Type of the order, ex. Limit, Market.
 		OrderType Type;
+
+		/// Price at which the order is to be executed at (ignored for Market Orders).
 		price_t Price;
+
+		/// Quantity of securities the order has been placed for.
 		quantity_t Quantity;
+
+		/// Datetime when the order was placed.
 		Timestamp TimePlaced;
 	};
 
+	/**
+	 * @class OrderBook
+	 * 
+	 * @brief Implementation of the order book of the market.
+	 * 
+	 * This class implements the functioning of an order book in the market. 
+	 */
 	class MICROEX_API OrderBook
 	{
 	public:
@@ -77,6 +113,9 @@ namespace MicroEx
 		void RemoveAskLevel(price_t price);
 		void RemoveBidLevel(price_t price);
 
+		void SanitiationCheck();
+		bool Validate() noexcept;
+
 	private:
 		struct ms_OrderLocation
 		{
@@ -102,8 +141,11 @@ namespace MicroEx
 		};
 
 	private:
-		std::map<price_t, std::deque<Order>, std::less<price_t>> m_Asks;
-		std::map<price_t, std::deque<Order>, std::greater<price_t>> m_Bids;
+		using eng_price_t = double;
+
+	private:
+		std::map<eng_price_t, std::deque<Order>, std::less<eng_price_t>> m_Asks;
+		std::map<eng_price_t, std::deque<Order>, std::greater<eng_price_t>> m_Bids;
 		std::unordered_map<order_id_t, ms_OrderLocation> m_OrderLocations;
 	};
 

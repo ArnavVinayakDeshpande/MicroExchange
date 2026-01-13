@@ -23,7 +23,7 @@ namespace MicroEx
 		if (m_Asks.empty())
 			return std::nullopt;
 
-		return m_Asks.begin()->first;
+		return price_t(m_Asks.begin()->first);
 	}
 
 	std::optional<price_t> OrderBook::GetBestBidPrice() const
@@ -31,7 +31,7 @@ namespace MicroEx
 		if (m_Bids.empty())
 			return std::nullopt;
 
-		return m_Bids.begin()->first;
+		return price_t(m_Bids.begin()->first);
 	}
 
 	std::optional<Order> OrderBook::GetBestAskOrder() const
@@ -144,10 +144,10 @@ namespace MicroEx
 
 	std::optional<std::vector<Order>> OrderBook::GetAskLevel(price_t price) const
 	{
-		if (m_Asks.empty())
+		if (m_Asks.empty() || !price.IsValid())
 			return std::nullopt;
 
-		auto it = m_Asks.find(price);
+		auto it = m_Asks.find(price.Get());
 
 		if (it == m_Asks.end())
 			return std::nullopt;
@@ -167,10 +167,10 @@ namespace MicroEx
 
 	std::optional<std::vector<Order>> OrderBook::GetBidLevel(price_t price) const
 	{
-		if (m_Bids.empty())
+		if (m_Bids.empty() || !price.IsValid())
 			return std::nullopt;
 
-		auto it = m_Bids.find(price);
+		auto it = m_Bids.find(price.Get());
 
 		if (it == m_Bids.end())
 			return std::nullopt;
@@ -190,10 +190,10 @@ namespace MicroEx
 
 	quantity_t OrderBook::GetAskOrderSize(price_t price) const
 	{
-		if (m_Asks.empty())
+		if (m_Asks.empty() || !price.IsValid())
 			return 0;
 
-		auto it = m_Asks.find(price);
+		auto it = m_Asks.find(price.Get());
 
 		if (it == m_Asks.end())
 			return 0;
@@ -203,10 +203,10 @@ namespace MicroEx
 
 	quantity_t OrderBook::GetBidOrderSize(price_t price) const
 	{
-		if (m_Bids.empty())
+		if (m_Bids.empty() || !price.IsValid())
 			return 0;
 
-		auto it = m_Bids.find(price);
+		auto it = m_Bids.find(price.Get());
 
 		if (it == m_Bids.end())
 			return 0;
@@ -216,10 +216,10 @@ namespace MicroEx
 
 	quantity_t OrderBook::GetAskDepth(price_t price) const
 	{
-		if (m_Asks.empty())
+		if (m_Asks.empty() || !price.IsValid())
 			return 0;
 
-		auto it = m_Asks.find(price);
+		auto it = m_Asks.find(price.Get());
 
 		if (it == m_Asks.end())
 			return 0;
@@ -234,10 +234,10 @@ namespace MicroEx
 
 	quantity_t OrderBook::GetBidDepth(price_t price) const
 	{
-		if (m_Bids.empty())
+		if (m_Bids.empty() || !price.IsValid())
 			return 0;
 
-		auto it = m_Bids.find(price);
+		auto it = m_Bids.find(price.Get());
 
 		if (it == m_Bids.end())
 			return 0;
@@ -283,18 +283,18 @@ namespace MicroEx
 
 	bool OrderBook::HasAsksAtPrice(price_t price) const
 	{
-		if (m_Asks.empty())
+		if (m_Asks.empty() || !price.IsValid())
 			return false;
 
-		return m_Asks.find(price) != m_Asks.end();
+		return m_Asks.find(price.Get()) != m_Asks.end();
 	}
 
 	bool OrderBook::HasBidsAtPrice(price_t price) const
 	{
-		if (m_Bids.empty())
+		if (m_Bids.empty() || !price.IsValid())
 			return false;
 
-		return m_Bids.find(price) != m_Bids.end();
+		return m_Bids.find(price.Get()) != m_Bids.end();
 	}
 
 	bool OrderBook::InsertAsk(const Order& order)
@@ -308,14 +308,14 @@ namespace MicroEx
 			return false;
 
 		// Check price
-		if (order.Price == 0) // For now we don't accept prices that are zero
+		if (order.Price == ValueTypes::ZeroPrice) // For now we don't accept prices that are zero
 			return false;
 
 		// Add ask order
-		m_Asks[order.Price].push_back(order);
+		m_Asks[order.Price.Get()].push_back(order);
 
 		// Add to location storage
-		m_OrderLocations[order.OrderID] = ms_OrderLocation(order.Side, order.Price, m_Asks[order.Price].end() - 1);
+		m_OrderLocations[order.OrderID] = ms_OrderLocation(order.Side, order.Price, m_Asks[order.Price.Get()].end() - 1);
 
 		return true;
 	}
@@ -331,14 +331,14 @@ namespace MicroEx
 			return false;
 
 		// Check price
-		if (order.Price == 0) // For now we don't accept prices that are zero
+		if (order.Price == ValueTypes::ZeroPrice) // For now we don't accept prices that are zero
 			return false;
 
 		// Add bid order
-		m_Bids[order.Price].push_back(order);
+		m_Bids[order.Price.Get()].push_back(order);
 
 		// Add to location storage
-		m_OrderLocations[order.OrderID] = ms_OrderLocation(order.Side, order.Price, m_Bids[order.Price].end() - 1);
+		m_OrderLocations[order.OrderID] = ms_OrderLocation(order.Side, order.Price, m_Bids[order.Price.Get()].end() - 1);
 
 		return true;
 	}
@@ -365,7 +365,7 @@ namespace MicroEx
 		if (orderLocation.Side != OrderSide::Seller)
 			return false;
 
-		auto orderIt = m_Asks.find(orderLocation.Price);
+		auto orderIt = m_Asks.find(orderLocation.Price.Get());
 
 		if (orderIt == m_Asks.end())
 			return false; // No order queue for price
@@ -403,7 +403,7 @@ namespace MicroEx
 		if (orderLocation.Side != OrderSide::Buyer)
 			return false;
 
-		auto orderIt = m_Bids.find(orderLocation.Price);
+		auto orderIt = m_Bids.find(orderLocation.Price.Get());
 
 		if (orderIt == m_Bids.end())
 			return false; // No order queue for price
@@ -630,9 +630,9 @@ namespace MicroEx
 
 		auto bestAsksIt = m_Asks.begin();
 
-		const price_t price = bestAsksIt->first;
+		const price_t price = price_t(bestAsksIt->first);
 
-		while (!m_Asks.empty() && m_Asks.begin()->first == price)
+		while (!m_Asks.empty() && m_Asks.begin()->first == price.Get())
 			this->RemoveBestAskOrder();
 	}
 
@@ -644,22 +644,25 @@ namespace MicroEx
 
 		auto bestBidsIt = m_Bids .begin();
 
-		const price_t price = bestBidsIt->first;
+		const price_t price = price_t(bestBidsIt->first);
 
-		while (!m_Bids.empty() && m_Bids.begin()->first == price)
+		while (!m_Bids.empty() && m_Bids.begin()->first == price.Get())
 			this->RemoveBestBidOrder();
 	}
 
 	void OrderBook::RemoveAskLevel(price_t price)
 	{
-		auto it = m_Asks.find(price);
+		if (m_Asks.empty() || !price.IsValid())
+			return;
+
+		auto it = m_Asks.find(price.Get());
 
 		if (it == m_Asks.end())
 			return;
 
-		while (m_Asks.find(price) != m_Asks.end())
+		while (m_Asks.find(price.Get()) != m_Asks.end())
 		{
-			auto& q = m_Asks[price];
+			auto& q = m_Asks[price.Get()];
 
 			this->CancelAsk(q.front().OrderID);
 		}
@@ -667,14 +670,17 @@ namespace MicroEx
 
 	void OrderBook::RemoveBidLevel(price_t price)
 	{
-		auto it = m_Bids.find(price);
+		if (m_Asks.empty() || !price.IsValid())
+			return;
+
+		auto it = m_Bids.find(price.Get());
 
 		if (it == m_Bids.end())
 			return;
 
-		while (m_Bids.find(price) != m_Bids.end())
+		while (m_Bids.find(price.Get()) != m_Bids.end())
 		{
-			auto& q = m_Bids[price];
+			auto& q = m_Bids[price.Get()];
 
 			this->CancelBid(q.front().OrderID);
 		}

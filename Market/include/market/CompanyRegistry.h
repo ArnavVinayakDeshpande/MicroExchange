@@ -1,6 +1,7 @@
 #pragma once
 
-#include <engine/Core.h>
+#include <core/Core.h>
+#include <engine/xxHash.h>
 #include <Timestamp.h>
 #include <string>
 #include <chrono>
@@ -135,6 +136,11 @@ namespace MicroEx
 
 	private:
 		CompanyDescriptor m_GetDescriptor(const ms_Company& company) const;
+
+	private:
+		static constexpr XXHASH::xxh64 s_Generator;
+		static constexpr std::uint64_t s_IDGeneratorNameSeed = 0xFF124A6BD1890ACE;
+		static constexpr std::uint64_t s_IDGeneratorTickerSeed = 0xAC178AFEBD89302F;
 
 	private:
 		std::unordered_map<company_id_t, ms_Company> m_Companies;

@@ -1,5 +1,5 @@
 #include <market/CompanyRegistry.h>
-#include <UUIDGenerator.h>
+#include <engine/xxHash.h>
 #include <stdexcept>
 
 namespace MicroEx
@@ -137,12 +137,12 @@ namespace MicroEx
 			return 0; // TODO: return invalid here, returning 0 for now
 		}
 
-		if (IsCompanyPresentByName(name))
+		if (this->IsCompanyPresentByName(name))
 		{
 			return 0; // TODO: return invalid here + log, returning 0 for now
 		}
 
-		if (IsCompanyPresentByTicker(ticker))
+		if (this->IsCompanyPresentByTicker(ticker))
 		{
 			return 0; // TODO: return invalid here + log, returning 0 for now
 		}
@@ -216,7 +216,21 @@ namespace MicroEx
 
 	company_id_t CompanyRegistry::GenerateID(const std::string& name, const std::string& ticker)
 	{
-		return 0; // TODO
+		if (name.empty() || ticker.empty())
+			return 0; // TODO RETURN INVALID ID AND LOG ERROR, FOR NOW RETURN 0
+
+		std::string buffer = name + " | " + ticker;
+
+		// TODO CHECK HOW TO STRUCTURE THE SEEDS
+		std::uint64_t idGenerated =
+			s_Generator.hash(
+				buffer.c_str(),
+				buffer.size(),
+				s_IDGeneratorNameSeed ^ s_IDGeneratorTickerSeed);
+
+		company_id_t finalID = static_cast<company_id_t>(idGenerated);
+
+		return finalID;
 	}
 
 	company_id_t CompanyRegistry::operator<<(const CompanyDescriptor& desc)

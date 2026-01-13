@@ -151,11 +151,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\core\Price.cpp" />
     <ClCompile Include="source\engine\MatchEngine.cpp" />
     <ClCompile Include="source\engine\OrderBook.cpp" />
     <ClCompile Include="source\market\CompanyRegistry.cpp" />
     <ClCompile Include="source\market\Market.cpp" />
     <ClCompile Include="source\market\MarketBroadcaster.cpp" />
+    <ClCompile Include="source\sanitation\SanitationChecker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\spdlog\spdlog.vcxproj">
@@ -166,13 +168,18 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\engine\Core.h" />
+    <ClInclude Include="include\core\Price.h" />
+    <ClInclude Include="include\core\Core.h" />
     <ClInclude Include="include\engine\MatchingEngine.h" />
     <ClInclude Include="include\engine\OrderBook.h" />
     <ClInclude Include="include\engine\Trade.h" />
+    <ClInclude Include="include\engine\xxHash.h" />
     <ClInclude Include="include\market\CompanyRegistry.h" />
     <ClInclude Include="include\market\Market.h" />
     <ClInclude Include="include\market\MarketBroadcaster.h" />
+    <ClInclude Include="include\sanitation\SanitationChecker.h" />
+    <ClInclude Include="include\sanitation\ValidationChecker.h" />
+    <ClInclude Include="source\sanitation\ValidationChcker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitattributes" />
