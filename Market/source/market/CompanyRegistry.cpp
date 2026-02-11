@@ -1,16 +1,23 @@
 #include <market/CompanyRegistry.h>
 #include <engine/xxHash.h>
-#include <stdexcept>
+#include <core/Error.h>
 
 namespace MicroEx
 {
+	company_id_t MICROEX_API InvalidCompanyID() noexcept
+	{
+		static const company_id_t invalidID = CompanyRegistry::GenerateID("MicroEx_Invalid", "aishnfi0absfi0bi");
+		return invalidID;
+	}
 
 	CompanyRegistry::CompanyRegistry()
 	{
+		MICROEX_LOG_CR_INF("Created Company Registry with UUID: {}", m_UUID);
 	}
 
 	CompanyRegistry::~CompanyRegistry()
 	{
+		MICROEX_LOG_CR_INF("Deleted Company Registry with UUID: {}", m_UUID);
 	}
 
 	using CDesc = CompanyDescriptor;
@@ -37,8 +44,7 @@ namespace MicroEx
 		if (id_it == m_Companies.end())
 		{
 			// Invariance broken
-			// TODO Error Handling
-			throw std::logic_error("Invariance in Company Registry broken.");
+			MICROEX_ERR_FTL("CompanyRegistry[{}] - Name Index points to non-existent company ID[{}]", m_UUID, it->second);
 		}
 
 		// TODO Wonder whether I should crosscheck name given with name stored in company in companies
@@ -58,8 +64,7 @@ namespace MicroEx
 		if (id_it == m_Companies.end())
 		{
 			// Invariance boroken
-			// TODO Error Handling
-			throw std::logic_error("Invariance in Company Registry broken.");
+			MICROEX_ERR_FTL("CompanyRegistry[{}] - Ticker Index points to non-existent company ID[{}]", m_UUID, it->second);
 		}
 
 		// TODO Wonder whether I should crosscheck ticker
@@ -128,22 +133,25 @@ namespace MicroEx
 		return m_Companies.size();
 	}
 
-	company_id_t CompanyRegistry::AddCompany(const std::string& name, const std::string& ticker, const Timestamp& joinDate)
+	company_id_t CompanyRegistry::AddCompany(const std::string& name, const std::string& ticker, const Timestamp& joinDate, price_t referencePrice)
 	{
 		// TODO Name UNiquness -> Ticker Uniqueness -> ID Generation
 	
 		if (name.empty() || ticker.empty())
 		{
-			return 0; // TODO: return invalid here, returning 0 for now
+			MICROEX_LOG_CR_ERR("CompanyRegistry[{0}] - Empty name and/or ticker symbol given for addition", m_UUID);
+			return InvalidCompanyID();
 		}
 
 		if (this->IsCompanyPresentByName(name))
 		{
-			return 0; // TODO: return invalid here + log, returning 0 for now
+			MICROEX_LOG_CR_ERR("CompanyRegistry[{0}] - Cannot add company: Name already exists", m_UUID);
+			return InvalidCompanyID();
 		}
 
 		if (this->IsCompanyPresentByTicker(ticker))
 		{
+			MICROEX_LOG_CR_ERR("CompanyRegistry[{0}] - Cannot add company: Ticker alread exists", m_UUID);
 			return 0; // TODO: return invalid here + log, returning 0 for now
 		}
 
@@ -152,7 +160,7 @@ namespace MicroEx
 		// Check for invalid id here
 
 		// Update company registry
-		m_Companies[idGenerated] = ms_Company(idGenerated, name, ticker, joinDate);
+		m_Companies[idGenerated] = ms_Company(idGenerated, name, ticker, joinDate, referencePrice);
 
 		// Update name index
 		m_NameIndex[name] = idGenerated;
@@ -160,18 +168,27 @@ namespace MicroEx
 		// Update ticker index
 		m_TickerIndex[ticker] = idGenerated;
 
+		MICROEX_LOG_CR_INF("CompanyRegistry[{0}] - Company with Name: {1}, Ticker: {2}, ID: {3} created", m_UUID, name, ticker, idGenerated);
+
 		return idGenerated;
 	}
 
 	void CompanyRegistry::RemoveCompany(company_id_t id)
 	{
 		// Check if id is invalid here
+		if (id == InvalidCompanyID())
+		{
+			MICROEX_LOG_CR_WRN("CompanyRegistry[{0}] - Tried to delete company with invalid ID", m_UUID);
+		}
 
 		// Check if id exists
 		auto it = m_Companies.find(id);
 
 		if (it == m_Companies.end())
+		{
+			MICROEX_LOG_CR_ERR("CompanyRegistry[{0}] - Could not remove company: No such company exists", m_UUID);
 			return;
+		}
 
 		// Company does exist, remove it
 		// Remove it from name index
@@ -182,6 +199,8 @@ namespace MicroEx
 
 		// Remove it from registry
 		m_Companies.erase(it);
+
+		MICROEX_LOG_CR_INF("CompanyRegistry[{0}] - Removed company with ID {1} succesfully", m_UUID, id);
 	}
 
 	bool CompanyRegistry::IsCompanyPresentByID(company_id_t id) const
@@ -235,7 +254,7 @@ namespace MicroEx
 
 	company_id_t CompanyRegistry::operator<<(const CompanyDescriptor& desc)
 	{
-		return this->AddCompany(desc.m_Name, desc.m_Ticker, desc.m_JoinDate);
+		return this->AddCompany(desc.m_Name, desc.m_Ticker, desc.m_JoinDate, desc.m_ReferencePrice);
 	}
 
 	void CompanyRegistry::operator>>(company_id_t id)
@@ -250,7 +269,7 @@ namespace MicroEx
 
 	CompanyDescriptor CompanyRegistry::m_GetDescriptor(const ms_Company& company) const
 	{
-		CompanyDescriptor descriptor(company.Name, company.Ticker, company.JoinDate);
+		CompanyDescriptor descriptor(company.Name, company.Ticker, company.JoinDate, company.ReferencePrice);
 		descriptor.m_ID = company.ID;
 
 		return descriptor;

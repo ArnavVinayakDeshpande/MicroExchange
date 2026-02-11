@@ -15,12 +15,12 @@
  * @def MICROEX_BUILD_SHARED
  * @brief Macro is defined if the project is build as a shared (dynamic) library.
  */
-#if defined(MICROEX_BUILD_SHARED)
+#ifdef MICROEX_BUILD_SHARED
 	/**
 	 * @def MICROEX_SOURCE
 	 * @brief Macro is defined in all source files of the project, external files written by other projects must have this macro undefined.
 	 */
-	#if defined(MICROEX_SOURCE)
+	#ifdef MICROEX_SOURCE
 		/**
 		 * @def MICROEX_API 
 		 * @brief Macro is defined if project is build as a shared library, automatically sorts imports and exports for shared libraries.
@@ -35,6 +35,16 @@
 	#endif
 #else
 	#define MICROEX_API
+#endif
+
+#ifdef _WIN32
+	#define MICROEX_PLATFORM_WINDOWS
+#elif defined(__linux__)
+	#define MICROEX_PLATFORM_LINUX
+#elif defined(__APPLE__)
+	#define MICROEX_PLATFORM_MACOS
+#else
+	#error UNSUPPORTED PLATFORM
 #endif
 
 namespace MicroEx
@@ -125,8 +135,15 @@ namespace MicroEx
 
 	// TODO Start filling OrderStatus
 
+	inline constexpr const char* GetCoreLogPath() noexcept
+	{
+		return "MicroExCore.log";
+	}
+
 	class Trade;
 
 	using TradeCallbackFunc = std::function<void(Trade&)>;
+
+	company_id_t MICROEX_API InvalidCompanyID() noexcept;
 
 } // namespace MicroEx

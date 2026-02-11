@@ -93,7 +93,7 @@
       <PreprocessorDefinitions>MICROEX_BUILD_SHARED;MICROEX_SOURCE;MICROEX_ENABLE_LOGGING;MICROEX_DEBUG_BUILD;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Utilities\include;$(SolutionDir)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Utilities\include;$(SolutionDir)Spdlog\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -110,7 +110,7 @@
       <PreprocessorDefinitions>MICROEX_BUILD_SHARED;MICROEX_SOURCE;MICROEX_ENABLE_LOGGING</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Utilities\include;$(SolutionDir)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Utilities\include;$(SolutionDir)Spdlog\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -125,7 +125,7 @@
       <PreprocessorDefinitions>MICROEX_BUILD_SHARED;MICROEX_SOURCE;MICROEX_ENABLE_LOGGING;MICROEX_DEBUG_BUILD;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Utilities\include;$(SolutionDir)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Utilities\include;$(SolutionDir)Spdlog\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -142,7 +142,7 @@
       <PreprocessorDefinitions>MICROEX_BUILD_SHARED;MICROEX_SOURCE;MICROEX_ENABLE_LOGGING</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Utilities\include;$(SolutionDir)spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;$(SolutionDir)Utilities\include;$(SolutionDir)Spdlog\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
@@ -151,12 +151,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="source\core\Error.cpp" />
+    <ClCompile Include="source\core\MicroEx.cpp" />
     <ClCompile Include="source\core\Price.cpp" />
     <ClCompile Include="source\engine\MatchEngine.cpp" />
     <ClCompile Include="source\engine\OrderBook.cpp" />
     <ClCompile Include="source\market\CompanyRegistry.cpp" />
     <ClCompile Include="source\market\Market.cpp" />
     <ClCompile Include="source\market\MarketBroadcaster.cpp" />
+    <ClCompile Include="source\market\MarketIO.cpp" />
     <ClCompile Include="source\sanitation\SanitationChecker.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -168,15 +171,20 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\core\Error.h" />
     <ClInclude Include="include\core\Price.h" />
     <ClInclude Include="include\core\Core.h" />
-    <ClInclude Include="include\engine\MatchingEngine.h" />
+    <ClInclude Include="include\engine\MatchEngine.h" />
     <ClInclude Include="include\engine\OrderBook.h" />
     <ClInclude Include="include\engine\Trade.h" />
     <ClInclude Include="include\engine\xxHash.h" />
     <ClInclude Include="include\market\CompanyRegistry.h" />
     <ClInclude Include="include\market\Market.h" />
     <ClInclude Include="include\market\MarketBroadcaster.h" />
+    <ClInclude Include="include\market\MarketConfig.h" />
+    <ClInclude Include="include\market\MarketIO.h" />
+    <ClInclude Include="include\MicroEx\MicroEx.h" />
+    <ClInclude Include="include\nholmann\json.h" />
     <ClInclude Include="include\sanitation\SanitationChecker.h" />
     <ClInclude Include="include\sanitation\ValidationChecker.h" />
     <ClInclude Include="source\sanitation\ValidationChcker.cpp" />

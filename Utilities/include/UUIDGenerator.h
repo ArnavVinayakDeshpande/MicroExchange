@@ -9,16 +9,16 @@ namespace MicroEx
 	class MICROEX_API UUIDGenerator
 	{
 	public:
-		static UUIDGenerator& GetInstance();
+		static UUIDGenerator& GetInstance() noexcept;
 
-		~UUIDGenerator();
+		~UUIDGenerator() noexcept;
 
-		uuid_t GenerateUUID();
+		uuid_t GenerateUUID() noexcept;
 
-		bool UUIDExists(uuid_t uuid_t) const;
+		bool UUIDExists(uuid_t uuid_t) const noexcept;
 
 	private:
-		UUIDGenerator();
+		UUIDGenerator() noexcept;
 
 	private:
 		static UUIDGenerator* s_Instance;

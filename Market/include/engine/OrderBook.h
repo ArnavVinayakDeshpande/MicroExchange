@@ -7,6 +7,7 @@
 
 #pragma once
 
+//#error stop_here
 #include <core/Core.h>
 #include <Timestamp.h>
 #include <core/Price.h>
@@ -15,6 +16,8 @@
 #include <unordered_map>
 #include <deque>
 #include <optional>
+#include <vector>
+#include <utility>
 
 namespace MicroEx
 {
@@ -26,12 +29,12 @@ namespace MicroEx
 	 * 
 	 * Represents and stores metadata of an order that is placed in the market.
 	 */
-	struct MICROEX_API Order
+	struct MICROEX_API Order final
 	{
 		/// Identifer of the order.
 		order_id_t OrderID;
 
-		// Identifer of the company whose securities the order has been placed for.
+		/// Identifer of the company whose securities the order has been placed for.
 		company_id_t CompanyID;
 
 		/// Side of the buyer i.e. Seller or Buyer.
@@ -57,85 +60,95 @@ namespace MicroEx
 	 * 
 	 * This class implements the functioning of an order book in the market. 
 	 */
-	class MICROEX_API OrderBook
+	class MICROEX_API OrderBook final
 	{
 	public:
-		OrderBook();
-		~OrderBook();
+		explicit OrderBook() noexcept;
+		~OrderBook() noexcept;
 
-		std::optional<price_t> GetBestAskPrice() const;
-		std::optional<price_t> GetBestBidPrice() const;
+		uuid_t GetUUID() const noexcept
+		{
+			return m_UUID;
+		}
 
-		std::optional<Order> GetBestAskOrder() const;
-		std::optional<Order> GetBestBidOrder() const;
+		std::optional<price_t> GetBestAskPrice() const noexcept;
+		std::optional<price_t> GetBestBidPrice() const noexcept;
 
-		std::optional<std::vector<Order>> GetBestAskLevel() const;
-		std::optional<std::vector<Order>> GetBestBidLevel() const;
+		std::optional<Order> GetBestAskOrder() const noexcept;
+		std::optional<Order> GetBestBidOrder() const noexcept;
 
-		quantity_t GetBestAskOrderSize() const;
-		quantity_t GetBestBidOrderSize() const;
+		std::vector<Order> GetBestAskLevel() const noexcept;
+		std::vector<Order> GetBestBidLevel() const noexcept;
 
-		quantity_t GetBestAskDepth() const;
-		quantity_t GetBestBidDepth() const;
+		quantity_t GetBestAskOrderSize() const noexcept;
+		quantity_t GetBestBidOrderSize() const noexcept;
 
-		std::optional<std::vector<Order>> GetAskLevel(price_t price) const;
-		std::optional<std::vector<Order>> GetBidLevel(price_t price) const;
+		quantity_t GetBestAskDepth() const noexcept;
+		quantity_t GetBestBidDepth() const noexcept;
 
-		quantity_t GetAskOrderSize(price_t price) const;
-		quantity_t GetBidOrderSize(price_t price) const;
+		std::vector<Order> GetAskLevel(price_t price) const noexcept;
+		std::vector<Order> GetBidLevel(price_t price) const noexcept;
 
-		quantity_t GetAskDepth(price_t price) const;
-		quantity_t GetBidDepth(price_t price) const;
+		quantity_t GetAskOrderSize(price_t price) const noexcept;
+		quantity_t GetBidOrderSize(price_t price) const noexcept;
 
-		std::optional<Order> FindOrder(order_id_t orderID) const;
+		quantity_t GetAskDepth(price_t price) const noexcept;
+		quantity_t GetBidDepth(price_t price) const noexcept;
 
-		bool HasAsks() const;
-		bool HasBids() const;
+		std::optional<Order> FindOrder(order_id_t orderID) const noexcept;
 
-		bool HasAsksAtPrice(price_t price) const;
-		bool HasBidsAtPrice(price_t price) const;
+		bool HasAsks() const noexcept;
+		bool HasBids() const noexcept;
 
-		bool InsertAsk(const Order& order);
-		bool InsertBid(const Order& order);
+		bool HasAsksAtPrice(price_t price) const noexcept;
+		bool HasBidsAtPrice(price_t price) const noexcept;
 
-		bool CancelAsk(order_id_t orderID);
-		bool CancelBid(order_id_t orderID);
+		bool InsertAsk(const Order& order) noexcept;
+		bool InsertBid(const Order& order) noexcept;
 
-		quantity_t ConsumeBestAsk(quantity_t quantity);
-		quantity_t ConsumeBestBid(quantity_t quantity);
+		bool CancelAsk(order_id_t orderID) noexcept;
+		bool CancelBid(order_id_t orderID) noexcept;
 
-		void RemoveBestAskOrder();
-		void RemoveBestBidOrder();
+		quantity_t ConsumeBestAsk(quantity_t quantity) noexcept;
+		quantity_t ConsumeBestBid(quantity_t quantity) noexcept;
 
-		void RemoveBestAskLevel();
-		void RemoveBestBidLevel();
+		void RemoveBestAskOrder() noexcept;
+		void RemoveBestBidOrder() noexcept;
 
-		void RemoveAskLevel(price_t price);
-		void RemoveBidLevel(price_t price);
+		void RemoveBestAskLevel() noexcept;
+		void RemoveBestBidLevel() noexcept;
 
-		void SanitiationCheck();
-		bool Validate() noexcept;
+		void RemoveAskLevel(price_t price) noexcept;
+		void RemoveBidLevel(price_t price) noexcept;
+
+		void RemoveAllAsks() noexcept;
+		void RemoveAllBids() noexcept;
+
+		void RemoveAllOrders() noexcept;
+
+		/*void SanitiationCheck() noexcept;
+		bool Validate() noexcept;*/
 
 	private:
-		struct ms_OrderLocation
+		struct ms_OrderLocation final
 		{
 			OrderSide Side;
 			price_t Price;
 			std::optional<std::deque<Order>::iterator> It;
 
-			ms_OrderLocation() // TODO Proper Default Constructor
+			ms_OrderLocation() noexcept // TODO Proper Default Constructor
 				:
 				Side(OrderSide::Buyer),
-				Price(0),
+				Price(ValueTypes::ZeroPrice),
 				It(std::nullopt) // Make It an optional
 			{
 			}
 
-			ms_OrderLocation(OrderSide side, price_t price, std::optional<std::deque<Order>::iterator> it)
+			explicit ms_OrderLocation(OrderSide side, price_t price, std::optional<std::deque<Order>::iterator> it) noexcept
 				:
 				Side(side),
 				Price(price),
-				It(std::move(it))
+				It(std::move(it)) 
 			{
 			}
 		};
@@ -147,6 +160,7 @@ namespace MicroEx
 		std::map<eng_price_t, std::deque<Order>, std::less<eng_price_t>> m_Asks;
 		std::map<eng_price_t, std::deque<Order>, std::greater<eng_price_t>> m_Bids;
 		std::unordered_map<order_id_t, ms_OrderLocation> m_OrderLocations;
+		uuid_t m_UUID;
 	};
 
 }

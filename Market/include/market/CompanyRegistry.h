@@ -8,6 +8,9 @@
 #include <vector>
 #include <optional>
 #include <unordered_map>
+#include <Logger.h>
+#include <UUIDGenerator.h>
+#include <core/Price.h>
 
 /**
 * Since including files like Windows.h can cause name clashes with var names like ID, Name etc., we undef it
@@ -26,18 +29,19 @@ namespace MicroEx
 
 	class MICROEX_API CompanyRegistry;
 
-	struct MICROEX_API CompanyDescriptor
+	struct MICROEX_API CompanyDescriptor final
 	{
 	public:
-		CompanyDescriptor(std::string name, std::string ticker, Timestamp joinDate)
+		CompanyDescriptor(std::string name, std::string ticker, Timestamp joinDate, price_t referencePrice)
 			:
 			m_Name(std::move(name)),
 			m_Ticker(std::move(ticker)),
-			m_JoinDate(std::move(joinDate))
+			m_JoinDate(std::move(joinDate)),
+			m_ReferencePrice(referencePrice)
 		{
 		}
 
-		virtual ~CompanyDescriptor() noexcept = default;
+		~CompanyDescriptor() noexcept = default;
 
 		const std::string& GetName() const
 		{
@@ -59,10 +63,16 @@ namespace MicroEx
 			return m_ID;
 		}
 
+		price_t GetReferencePrice() const noexcept
+		{
+			return m_ReferencePrice;
+		}
+
 	private:
 		std::string m_Name;
 		std::string m_Ticker;
 		Timestamp m_JoinDate;
+		price_t m_ReferencePrice;
 		company_id_t m_ID;
 
 	private:
@@ -78,24 +88,27 @@ namespace MicroEx
 			std::string Name;
 			std::string Ticker;
 			Timestamp JoinDate;
-
+			price_t ReferencePrice;
+			
 			ms_Company()
 				:
 				ID(0), // invalid ID
 				Name(""),
 				Ticker(""),
-				JoinDate()
+				JoinDate(),
+				ReferencePrice(ValueTypes::ZeroPrice)
 			{
 			}
 
-			ms_Company(company_id_t id, std::string name, std::string ticker, Timestamp joinDate) noexcept
+			ms_Company(company_id_t id, std::string name, std::string ticker, Timestamp joinDate, price_t referencePrice) noexcept
 				:
 				ID(id),
 				Name(std::move(name)),
 				Ticker(std::move(ticker)),
-				JoinDate(std::move(joinDate))
+				JoinDate(std::move(joinDate)),
+				ReferencePrice(referencePrice)
 			{
-				// Log
+				MICROEX_LOG_CR_INF("Created Company: ID[{0}], Name[{1}], Ticker[{2}]", ID, Name, Ticker);
 			}
 		};
 
@@ -103,6 +116,11 @@ namespace MicroEx
 		CompanyRegistry();
 
 		~CompanyRegistry();
+
+		uuid_t GetUUID() const noexcept
+		{
+			return m_UUID;
+		}
 
 		std::optional<CompanyDescriptor> GetCompanyByID(company_id_t id) const;
 		std::optional<CompanyDescriptor> GetCompanyByName(const std::string& name) const;
@@ -115,7 +133,7 @@ namespace MicroEx
 
 		size_t GetRegistrySize() const;
 
-		company_id_t AddCompany(const std::string& name, const std::string& ticker, const Timestamp& joinDate = Timestamp::Now());
+		company_id_t AddCompany(const std::string& name, const std::string& ticker, const Timestamp& joinDate, price_t referencePrice);
 
 		void RemoveCompany(company_id_t id);
 
@@ -146,6 +164,7 @@ namespace MicroEx
 		std::unordered_map<company_id_t, ms_Company> m_Companies;
 		std::unordered_map<std::string, company_id_t> m_NameIndex;
 		std::unordered_map<std::string, company_id_t> m_TickerIndex;
+		uuid_t m_UUID;
 	};
 
 }

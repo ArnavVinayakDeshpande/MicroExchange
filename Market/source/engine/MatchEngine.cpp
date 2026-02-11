@@ -1,93 +1,156 @@
-#include <engine/MatchingEngine.h>
+#include <engine/MatchEngine.h>
+#include <core/Error.h>
+#include <UUIDGenerator.h>
+#include <Logger.h>
 
 namespace MicroEx
 {
 
-	MatchEngine::MatchEngine(const CompanyRegistry& registry)
+	MatchEngine::MatchEngine(const CompanyRegistry& registry) noexcept
 		:
-		m_OrderBook(),
-		m_MarketPrices()
+		m_Instruments(),
+		m_OrderRoutingTable(),
+		m_CompanyRegistry(registry),
+		m_UUID(UUIDGenerator::GetInstance().GenerateUUID())
 	{
-		auto company_ids = registry.GetAllCompanyIDs();
+		MICROEX_LOG_CR_INF("Creating Market with UUID: {}", m_UUID);
 
-		if (!company_ids)
-			throw std::runtime_error("Invalid registry"); // TODO Add asserts/error management, exception temporary
+		this->SyncWithRegistry();
 
-		for (const auto& id : company_ids.value())
-			m_MarketPrices[id] = 0.0; // TODO Market Price initialization by excel file
+		MICROEX_LOG_CR_INF("Creation of Market with UUID: {} completed", m_UUID);
 	}
 
-	MatchEngine::~MatchEngine()
+	MatchEngine::~MatchEngine() noexcept
 	{
-		// TODO Logging
+		this->FlushOrderBooks();
+		MICROEX_LOG_CR_INF("Deleted Market with UUID: {}", m_UUID);
 	}
 
-	void MatchEngine::PlaceOrder(Order order)
+	void MatchEngine::PlaceOrder(Order order) noexcept
 	{
-		// Add a check for company id
+		if (order.Quantity == 0 || order.Price == ValueTypes::ZeroPrice)
+		{
+			MICROEX_ERR_WRN("Market[{0}] - Invalid Order Placed: OrderID: {1}", m_UUID, order.OrderID);
+			return; 
+		}
 
-		if (order.Quantity == 0 || order.Price == 0)
-			return; // Logging
+		auto instrIt = m_Instruments.find(order.CompanyID);
+
+		if (instrIt == m_Instruments.end())
+		{
+			MICROEX_LOG_CR_ERR("Market[{0}] - No Such Company Exists in Registry: {1}", m_UUID, order.CompanyID);
+			return;
+		}
+
+		auto& instrument = instrIt->second;
 
 		if (order.Type == OrderType::Market)
 		{
 			if (order.Side == OrderSide::Seller)
-				m_PlaceMarketAsk(order);
+				m_PlaceMarketAsk(instrument, order);
 			else if (order.Side == OrderSide::Buyer)
-				m_PlaceMarketBid(order);
+				m_PlaceMarketBid(instrument, order);
 		}
 		else if (order.Type == OrderType::Limit)
 		{
 			if (order.Side == OrderSide::Seller)
-				m_PlaceLimitAsk(order);
+				m_PlaceLimitAsk(instrument, order);
 			else if (order.Side == OrderSide::Buyer)
-				m_PlaceLimitBid(order);
+				m_PlaceLimitBid(instrument, order);
 		}
+
+		// Add it to routing table
+		m_OrderRoutingTable[order.OrderID] = order.CompanyID;
+
+		MICROEX_LOG_CR_INF("Market[{0}] - Placed Order: OrderID: {1}", m_UUID, order.OrderID);
 	}
 
-	std::optional<price_t> MatchEngine::GetMarketPrice(company_id_t companyID) const
+	std::optional<price_t> MatchEngine::GetMarketPrice(company_id_t companyID) const noexcept
 	{
-		auto it = m_MarketPrices.find(companyID);
+		auto it = m_Instruments.find(companyID);
 
 		
 		//return it != m_MarketPrices.end() ? it->second : std::nullopt;
 	
-		if (it == m_MarketPrices.end())
+		if (it == m_Instruments.end())
 			return std::nullopt;
 
-		return it->second;
+		return it->second.MarketPrice;
 	}
 
-	std::optional<price_t> MatchEngine::operator[](company_id_t companyID) const
+	std::optional<price_t> MatchEngine::operator[](company_id_t companyID) const noexcept
 	{
 		return this->GetMarketPrice(companyID);
 	}
 
-	std::optional<Order> MatchEngine::FindOrder(order_id_t orderID) const
+	std::optional<Order> MatchEngine::FindOrder(order_id_t orderID) const noexcept
 	{
-		return m_OrderBook.FindOrder(orderID);
+		auto routIt = m_OrderRoutingTable.find(orderID);
+
+		if (routIt == m_OrderRoutingTable.end())
+			return std::nullopt;
+
+		auto instIt = m_Instruments.find(routIt->second);
+
+		if (instIt == m_Instruments.end())
+		{
+			MICROEX_ERR_FTL("MatchEngine[{0}] - No company with ID: {1} registered", m_UUID, routIt->second);
+			return std::nullopt;
+		}
+
+		return instIt->second.Book.FindOrder(orderID);
 	}
 
-	std::optional<Order> MatchEngine::operator()(order_id_t orderID) const
+	std::optional<Order> MatchEngine::operator()(order_id_t orderID) const noexcept
 	{
 		return this->FindOrder(orderID);
 	}
 
-	void MatchEngine::m_PlaceLimitAsk(Order& order)
+	void MatchEngine::SyncWithRegistry() 
+	{
+		// Get the company descriptors
+		auto desc = m_CompanyRegistry.GetAllCompanies();
+
+		// Iterate through the company registry descriptors to add companies not present
+		// in match engine
+		for (const auto& c : desc.value())
+		{
+			if (m_Instruments.find(c.GetID()) != m_Instruments.end())
+				continue; // Company exists
+			m_Instruments.try_emplace(
+				c.GetID(),
+				c.GetID(), OrderBook(), c.GetReferencePrice());
+		}
+	}
+
+	void MatchEngine::FlushOrderBooks() noexcept
+	{
+		MICROEX_LOG_CR_INF("Market[{0}] - Flushing Order Books", m_UUID);
+		
+		for (auto it = m_Instruments.begin(); it != m_Instruments.end(); ++it)
+		{
+			it->second.Book.RemoveAllOrders();
+		}
+	}
+
+	void MatchEngine::m_PlaceLimitAsk(ms_Instrument& instrument, Order& order) noexcept
 	{
 		quantity_t& quantity = order.Quantity;
 		const price_t& price = order.Price;
-		price_t currentMarketPrice = m_MarketPrices[order.CompanyID];
+		price_t& marketPrice = instrument.MarketPrice;
+		OrderBook& book = instrument.Book;
+
+		
+		price_t currentMarketPrice = marketPrice;
 
 		while (quantity > 0)
 		{
 			// Check if we can match
-			auto bestBidOpt = m_OrderBook.GetBestBidPrice();
+			auto bestBidOpt = book.GetBestBidPrice();
 
 			if (!bestBidOpt)
 			{
-				// log
-
+				MICROEX_LOG_CR_WRN("Market[{0}], OrderBook[{1}] - No Best Bid Available", m_UUID, book.GetUUID());
 				break;
 			}
 
@@ -97,26 +160,25 @@ namespace MicroEx
 			if (bestBid < price)
 			{
 
-				// log
-
 				break;
 			}
 
 			// Place the order
-			quantity_t quantityConsumed = m_OrderBook.ConsumeBestBid(quantity);
+			quantity_t quantityConsumed = book.ConsumeBestBid(quantity);
 
 			// If quantity is zero, we don't add the trade, else we add the trade
 			if (quantityConsumed != 0)
 			{
 				;// Add Trade Callback here; trade happens at best bid
+				MICROEX_LOG_CR_INF("Market[{0}], OrderBook[{1}] - Trade Executed at Price: {2} for Quantity: {3}", m_UUID, book.GetUUID(), bestBid.Get(), quantityConsumed);
 
 				// Since trade has happened, we update the market price
 				currentMarketPrice = bestBid;
 			}
 			else
 			{
-				// LOGIC ERROR SINCE THIS BREAKS ORDER BOOK INVARIANCE
-				throw std::logic_error("OrderBook invariance broken in asks.");
+				// THIS MEANS INVARIANCE BROKEN
+				MICROEX_ERR_FTL("Market[{0}], OrderBook[{1}] - OrderBook Invariance Broken in Asks", m_UUID, book.GetUUID());
 			}
 
 			// Reduce the quantity
@@ -132,26 +194,30 @@ namespace MicroEx
 		// the best bid and ask don't match
 		// if quantity exists, we add a bid order and exit the function
 		if (quantity != 0)
-			m_OrderBook.InsertAsk(order);
+			book.InsertAsk(order);
 
 		// Set the market price
-		m_MarketPrices[order.CompanyID] = currentMarketPrice;
+		marketPrice = currentMarketPrice;
 	}
 
-	void MatchEngine::m_PlaceLimitBid(Order& order)
+	void MatchEngine::m_PlaceLimitBid(ms_Instrument& instrument, Order& order) noexcept
 	{
 		quantity_t& quantity = order.Quantity;
-		price_t price = order.Price;
-		price_t currentMarketPrice = m_MarketPrices[order.CompanyID];
+		const price_t& price = order.Price;
+		price_t& marketPrice = instrument.MarketPrice;
+		OrderBook& book = instrument.Book;
+
+		price_t currentMarketPrice = marketPrice;
 
 		while (quantity > 0)
 		{
 			// Check if we can match
-			auto bestAskOpt = m_OrderBook.GetBestAskPrice();
+			auto bestAskOpt = book.GetBestAskPrice();
 
 			if (!bestAskOpt)
 			{
-				
+				MICROEX_LOG_CR_WRN("Market[{0}], OrderBook[{1}] - No Best Ask Available", m_UUID, book.GetUUID());
+
 				break;
 			}
 
@@ -160,28 +226,25 @@ namespace MicroEx
 
 			if (price >= bestAsk)
 			{
-
-				// log
-
 				break;
 			}
 
 			// Place the order
-			quantity_t quantityConsumed = m_OrderBook.ConsumeBestAsk(quantity);
+			quantity_t quantityConsumed = book.ConsumeBestAsk(quantity);
 
 			// If quantity is zero, we don't add the trade, else we add the trade
 			if (quantityConsumed != 0)
 			{
 				;// Add Trade Callback here; trade happens at best ask
-				
+				MICROEX_LOG_CR_INF("Market[{0}], OrderBook[{1}] - Trade Executed at Price: {2} for Quantity: {3}", m_UUID, book.GetUUID(), bestAsk.Get(), quantityConsumed);
 
 				// Since trade has happened, we update the market price
 				currentMarketPrice = bestAsk;
 			}
 			else
 			{
-				// LOGIC ERROR SINCE THIS BREAKS ORDER BOOK INVARIANCE
-				throw std::logic_error("OrderBook invariance broken in bids.");
+				// THIS MEANS INVARIANCE BROKEN
+				MICROEX_ERR_FTL("Market[{0}], OrderBook[{1}] - OrderBook Invariance Broken in Bids", m_UUID, book.GetUUID());
 			}
 
 			// Reduce the quantity
@@ -197,25 +260,28 @@ namespace MicroEx
 		// the best ask and bid don't match
 		// if quantity exists, we add a bid order and exit the function
 		if (quantity != 0)
-			m_OrderBook.InsertBid(order);
+			book.InsertBid(order);
 
 		// Set the market price
-		m_MarketPrices[order.CompanyID] = currentMarketPrice;
+		marketPrice = currentMarketPrice;
 	}
 
-	void MatchEngine::m_PlaceMarketAsk(Order& order)
+	void MatchEngine::m_PlaceMarketAsk(ms_Instrument& instrument, Order& order) noexcept
 	{
 		quantity_t& quantity = order.Quantity;
-		price_t currentMarketPrice = m_MarketPrices[order.CompanyID];
+		price_t& marketPrice = instrument.MarketPrice;
+		OrderBook& book = instrument.Book;
+
+		price_t currentMarketPrice = marketPrice;
 
 		while (quantity > 0)
 		{
 			// Check if we can match
-			auto bestBidOpt = m_OrderBook.GetBestBidPrice();
+			auto bestBidOpt = book.GetBestBidPrice();
 
 			if (!bestBidOpt)
 			{
-				// log
+				MICROEX_LOG_CR_WRN("Market[{0}], OrderBook[{1}] - No Best Bid Available", m_UUID, book.GetUUID());
 
 				break;
 			}
@@ -224,7 +290,7 @@ namespace MicroEx
 			price_t bestBid = bestBidOpt.value();
 
 			// Place the order
-			quantity_t quantityConsumed = m_OrderBook.ConsumeBestBid(quantity);
+			quantity_t quantityConsumed = book.ConsumeBestBid(quantity);
 
 			// If quantity is zero, we don't add the trade, else we add the trade
 			if (quantityConsumed != 0)
@@ -236,8 +302,8 @@ namespace MicroEx
 			}
 			else
 			{
-				// LOGIC ERROR SINCE THIS BREAKS ORDER BOOK INVARIANCE
-				throw std::logic_error("OrderBook invariance broken in asks.");
+				// ORDER BOOK INVARIANCE BROKEN
+				MICROEX_ERR_FTL("Market[{0}], OrderBook[{1}] - OrderBook Invariance Broken in Asks", m_UUID, book.GetUUID());
 			}
 
 			// Reduce the quantity
@@ -252,22 +318,25 @@ namespace MicroEx
 		// there are no more sell orders, and we don't add it to orderbook
 
 		// Set the market price
-		m_MarketPrices[order.CompanyID] = currentMarketPrice;
+		marketPrice = currentMarketPrice;
 	}
 
-	void MatchEngine::m_PlaceMarketBid(Order& order)
+	void MatchEngine::m_PlaceMarketBid(ms_Instrument& instrument, Order& order) noexcept
 	{
 		quantity_t& quantity = order.Quantity;
-		const price_t& price = order.Price;
-		price_t currentMarketPrice = m_MarketPrices[order.CompanyID];
+		price_t& marketPrice = instrument.MarketPrice;
+		OrderBook& book = instrument.Book;
+
+		price_t currentMarketPrice = marketPrice;
 
 		while (quantity > 0)
 		{
 			// Check if we can match
-			auto bestAskOpt = m_OrderBook.GetBestAskPrice();
+			auto bestAskOpt = book.GetBestAskPrice();
 
 			if (!bestAskOpt)
 			{
+				MICROEX_LOG_CR_WRN("Market[{0}], OrderBook[{1}] - No Best Ask Available", m_UUID, book.GetUUID());
 
 				break;
 			}
@@ -276,7 +345,7 @@ namespace MicroEx
 			price_t bestAsk = bestAskOpt.value();
 
 			// Place the order
-			quantity_t quantityConsumed = m_OrderBook.ConsumeBestAsk(quantity);
+			quantity_t quantityConsumed = book.ConsumeBestAsk(quantity);
 
 			// If quantity is zero, we don't add the trade, else we add the trade
 			if (quantityConsumed != 0)
@@ -289,8 +358,8 @@ namespace MicroEx
 			}
 			else
 			{
-				// LOGIC ERROR SINCE THIS BREAKS ORDER BOOK INVARIANCE
-				throw std::logic_error("OrderBook invariance broken in bids.");
+				// ORDER BOOK INVARIANCE BROKEN
+				MICROEX_ERR_FTL("Market[{0}], OrderBook[{1}] - OrderBook Invariance Broken in Bids", m_UUID, book.GetUUID());
 			}
 
 			// Reduce the quantity
@@ -302,7 +371,7 @@ namespace MicroEx
 		}
 
 		// Set the market price
-		m_MarketPrices[order.CompanyID] = currentMarketPrice;
+		marketPrice = currentMarketPrice;
 	}
 
 }

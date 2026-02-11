@@ -6,15 +6,15 @@ namespace MicroEx
 
 	UUIDGenerator* UUIDGenerator::s_Instance = nullptr;
 
-	UUIDGenerator::UUIDGenerator()
+	UUIDGenerator::UUIDGenerator() noexcept
 	{
 	}
 
-	UUIDGenerator::~UUIDGenerator()
+	UUIDGenerator::~UUIDGenerator() noexcept
 	{
 	}
 
-	UUIDGenerator& UUIDGenerator::GetInstance()
+	UUIDGenerator& UUIDGenerator::GetInstance() noexcept
 	{
 		if (!s_Instance)
 			s_Instance = new UUIDGenerator();
@@ -22,7 +22,7 @@ namespace MicroEx
 		return *s_Instance;
 	}
 
-	uuid_t UUIDGenerator::GenerateUUID()
+	uuid_t UUIDGenerator::GenerateUUID() noexcept
 	{
 		static std::random_device rd;
 		static std::mt19937_64 gen(rd());
@@ -38,7 +38,7 @@ namespace MicroEx
 		return newuuid_t;
 	}
 
-	bool UUIDGenerator::UUIDExists(uuid_t uuid_t) const
+	bool UUIDGenerator::UUIDExists(uuid_t uuid_t) const noexcept
 	{
 		return m_GeneratedUUIDs.find(uuid_t) != m_GeneratedUUIDs.end();
 	}

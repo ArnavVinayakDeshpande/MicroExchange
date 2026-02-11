@@ -1,24 +1,28 @@
 #include <engine/OrderBook.h>
-#include <stdexcept>
+#include <Logger.h>
+#include <UUIDGenerator.h>
+#include <core/Error.h>
 
 namespace MicroEx
 {
 
-	OrderBook::OrderBook()
+	OrderBook::OrderBook() noexcept
 		:
 		m_Asks(),
 		m_Bids(),
-		m_OrderLocations()
+		m_OrderLocations(),
+		m_UUID(UUIDGenerator::GetInstance().GenerateUUID())
 	{
-		// TODO Log creation
+		MICROEX_LOG_CR_INF("Created OrderBook with UUID: {}", m_UUID);
 	}
 
-	OrderBook::~OrderBook()
+	OrderBook::~OrderBook() noexcept
 	{
-		// TODO Log destruction
+		this->RemoveAllOrders();
+		MICROEX_LOG_CR_INF("Deleted OrderBook with UUID: {}", m_UUID);
 	}
 
-	std::optional<price_t> OrderBook::GetBestAskPrice() const
+	std::optional<price_t> OrderBook::GetBestAskPrice() const noexcept
 	{
 		if (m_Asks.empty())
 			return std::nullopt;
@@ -26,7 +30,7 @@ namespace MicroEx
 		return price_t(m_Asks.begin()->first);
 	}
 
-	std::optional<price_t> OrderBook::GetBestBidPrice() const
+	std::optional<price_t> OrderBook::GetBestBidPrice() const noexcept
 	{
 		if (m_Bids.empty())
 			return std::nullopt;
@@ -34,35 +38,26 @@ namespace MicroEx
 		return price_t(m_Bids.begin()->first);
 	}
 
-	std::optional<Order> OrderBook::GetBestAskOrder() const
+	std::optional<Order> OrderBook::GetBestAskOrder() const noexcept
 	{
 		if (m_Asks.empty())
-			return std::nullopt;
-
-		if (m_Asks.begin()->second.empty())
 			return std::nullopt;
 
 		return m_Asks.begin()->second.front();
 	}
 
-	std::optional<Order> OrderBook::GetBestBidOrder() const
+	std::optional<Order> OrderBook::GetBestBidOrder() const noexcept
 	{
 		if (m_Bids.empty())
-			return std::nullopt;
-
-		if (m_Bids.begin()->second.empty())
 			return std::nullopt;
 
 		return m_Bids.begin()->second.front();
 	}
 
-	std::optional<std::vector<Order>> OrderBook::GetBestAskLevel() const
+	std::vector<Order> OrderBook::GetBestAskLevel() const noexcept
 	{
 		if (m_Asks.empty())
-			return std::nullopt;
-
-		if (m_Asks.begin()->second.empty())
-			return std::nullopt;
+			return {};
 
 		std::vector<Order> asks;
 		asks.reserve(m_Asks.begin()->second.size());
@@ -75,13 +70,10 @@ namespace MicroEx
 		return asks;
 	}
 
-	std::optional<std::vector<Order>> OrderBook::GetBestBidLevel() const
+	std::vector<Order> OrderBook::GetBestBidLevel() const noexcept
 	{
 		if (m_Bids.empty())
-			return std::nullopt;
-
-		if (m_Bids.begin()->second.empty())
-			return std::nullopt;
+			return {};
 
 		std::vector<Order> bids;
 		bids.reserve(m_Bids.begin()->second.size());
@@ -94,7 +86,7 @@ namespace MicroEx
 		return bids;
 	}
 
-	quantity_t OrderBook::GetBestAskOrderSize() const
+	quantity_t OrderBook::GetBestAskOrderSize() const noexcept
 	{
 		if (m_Asks.empty())
 			return 0;
@@ -102,7 +94,7 @@ namespace MicroEx
 		return m_Asks.begin()->second.size();
 	}
 
-	quantity_t OrderBook::GetBestBidOrderSize() const
+	quantity_t OrderBook::GetBestBidOrderSize() const noexcept
 	{
 		if (m_Bids.empty())
 			return 0;
@@ -110,7 +102,7 @@ namespace MicroEx
 		return m_Bids.begin()->second.size();
 	}
 
-	quantity_t OrderBook::GetBestAskDepth() const
+	quantity_t OrderBook::GetBestAskDepth() const noexcept
 	{
 		if (m_Asks.empty())
 			return 0;
@@ -126,7 +118,7 @@ namespace MicroEx
 		return depth;
 	}
 
-	quantity_t OrderBook::GetBestBidDepth() const
+	quantity_t OrderBook::GetBestBidDepth() const noexcept
 	{
 		if (m_Bids.empty())
 			return 0;
@@ -142,15 +134,15 @@ namespace MicroEx
 		return depth;
 	}
 
-	std::optional<std::vector<Order>> OrderBook::GetAskLevel(price_t price) const
+	std::vector<Order> OrderBook::GetAskLevel(price_t price) const noexcept
 	{
 		if (m_Asks.empty() || !price.IsValid())
-			return std::nullopt;
+			return {};
 
 		auto it = m_Asks.find(price.Get());
 
 		if (it == m_Asks.end())
-			return std::nullopt;
+			return {};
 
 		auto& book = it->second;
 
@@ -165,15 +157,15 @@ namespace MicroEx
 		return asks;
 	}
 
-	std::optional<std::vector<Order>> OrderBook::GetBidLevel(price_t price) const
+	std::vector<Order> OrderBook::GetBidLevel(price_t price) const noexcept
 	{
 		if (m_Bids.empty() || !price.IsValid())
-			return std::nullopt;
+			return {};
 
 		auto it = m_Bids.find(price.Get());
 
 		if (it == m_Bids.end())
-			return std::nullopt;
+			return {};
 
 		auto& book = it->second;
 
@@ -188,7 +180,7 @@ namespace MicroEx
 		return bids;
 	}
 
-	quantity_t OrderBook::GetAskOrderSize(price_t price) const
+	quantity_t OrderBook::GetAskOrderSize(price_t price) const noexcept
 	{
 		if (m_Asks.empty() || !price.IsValid())
 			return 0;
@@ -201,7 +193,7 @@ namespace MicroEx
 		return it->second.size();
 	}
 
-	quantity_t OrderBook::GetBidOrderSize(price_t price) const
+	quantity_t OrderBook::GetBidOrderSize(price_t price) const noexcept
 	{
 		if (m_Bids.empty() || !price.IsValid())
 			return 0;
@@ -214,7 +206,7 @@ namespace MicroEx
 		return it->second.size();
 	}
 
-	quantity_t OrderBook::GetAskDepth(price_t price) const
+	quantity_t OrderBook::GetAskDepth(price_t price) const noexcept
 	{
 		if (m_Asks.empty() || !price.IsValid())
 			return 0;
@@ -232,7 +224,7 @@ namespace MicroEx
 		return depth;
 	}
 
-	quantity_t OrderBook::GetBidDepth(price_t price) const
+	quantity_t OrderBook::GetBidDepth(price_t price) const noexcept
 	{
 		if (m_Bids.empty() || !price.IsValid())
 			return 0;
@@ -250,7 +242,7 @@ namespace MicroEx
 		return depth;
 	}
 
-	std::optional<Order> OrderBook::FindOrder(order_id_t orderID) const
+	std::optional<Order> OrderBook::FindOrder(order_id_t orderID) const noexcept
 	{
 		auto it = m_OrderLocations.find(orderID);
 
@@ -261,9 +253,11 @@ namespace MicroEx
 
 		if (!locationOpt.has_value())
 		{
-			// Invariance broken
-			throw std::logic_error("Invariance of order book broken.");
-			// TODO Error Handling
+			/*
+				Broken Invariance: There is no valid location of order present.
+			*/
+
+			MICROEX_ERR_FTL("OrderBook[{0}] invariance broken: No Valid Location", m_UUID);
 		}
 
 		auto location = locationOpt.value();
@@ -271,17 +265,17 @@ namespace MicroEx
 		return *location;
 	}
 
-	bool OrderBook::HasAsks() const
+	bool OrderBook::HasAsks() const noexcept
 	{
 		return !m_Asks.empty();
 	}
 
-	bool OrderBook::HasBids() const
+	bool OrderBook::HasBids() const noexcept
 	{
 		return !m_Bids.empty();
 	}
 
-	bool OrderBook::HasAsksAtPrice(price_t price) const
+	bool OrderBook::HasAsksAtPrice(price_t price) const noexcept
 	{
 		if (m_Asks.empty() || !price.IsValid())
 			return false;
@@ -289,7 +283,7 @@ namespace MicroEx
 		return m_Asks.find(price.Get()) != m_Asks.end();
 	}
 
-	bool OrderBook::HasBidsAtPrice(price_t price) const
+	bool OrderBook::HasBidsAtPrice(price_t price) const noexcept
 	{
 		if (m_Bids.empty() || !price.IsValid())
 			return false;
@@ -297,7 +291,7 @@ namespace MicroEx
 		return m_Bids.find(price.Get()) != m_Bids.end();
 	}
 
-	bool OrderBook::InsertAsk(const Order& order)
+	bool OrderBook::InsertAsk(const Order& order) noexcept
 	{
 		// Sanitize
 		if (order.Side != OrderSide::Seller)
@@ -320,7 +314,7 @@ namespace MicroEx
 		return true;
 	}
 
-	bool OrderBook::InsertBid(const Order& order)
+	bool OrderBook::InsertBid(const Order& order) noexcept
 	{
 		// Sanitize
 		if (order.Side != OrderSide::Buyer)
@@ -343,7 +337,7 @@ namespace MicroEx
 		return true;
 	}
 
-	bool OrderBook::CancelAsk(order_id_t orderID)
+	bool OrderBook::CancelAsk(order_id_t orderID) noexcept
 	{
 		if (m_Asks.empty())
 			return false; // No asks, nothing to cancel
@@ -357,9 +351,7 @@ namespace MicroEx
 
 		if (!orderLocation.It)
 		{
-			// We don't have order location, 
-			// TODO Handle this error more gracefully
-			throw std::runtime_error("No valid location for given ask found.");
+			MICROEX_ERR_FTL("OrderBook[{0}] invariance broken: Asks Order Location-Book Invariance Broken.", m_UUID);
 		}
 
 		if (orderLocation.Side != OrderSide::Seller)
@@ -382,7 +374,7 @@ namespace MicroEx
 		return true;
 	}
 
-	bool OrderBook::CancelBid(order_id_t orderID)
+	bool OrderBook::CancelBid(order_id_t orderID) noexcept
 	{
 		if (m_Bids.empty())
 			return false; // No asks, nothing to cancel
@@ -396,8 +388,7 @@ namespace MicroEx
 
 		if (!orderLocation.It)
 		{
-			// TODO Handle this error more gracefully
-			throw std::runtime_error("No valid location for bid found.");
+			MICROEX_ERR_FTL("OrderBook[{0}] invariance broken: Bids Order Location-Book Invariance Broken.", m_UUID);
 		}
 
 		if (orderLocation.Side != OrderSide::Buyer)
@@ -420,7 +411,7 @@ namespace MicroEx
 		return true;
 	}
 
-	quantity_t OrderBook::ConsumeBestAsk(quantity_t quantity)
+	quantity_t OrderBook::ConsumeBestAsk(quantity_t quantity) noexcept
 	{
 		if (!quantity)
 			return 0;
@@ -470,7 +461,7 @@ namespace MicroEx
 		return totalQuantityConsumed;
 	}
 
-	quantity_t OrderBook::ConsumeBestBid(quantity_t quantity)
+	quantity_t OrderBook::ConsumeBestBid(quantity_t quantity) noexcept
 	{
 		if (!quantity)
 			return 0;
@@ -520,7 +511,7 @@ namespace MicroEx
 		return totalQuantityConsumed;
 	}
 
-	void OrderBook::RemoveBestAskOrder()
+	void OrderBook::RemoveBestAskOrder() noexcept
 	{
 		// Make sure ask isn't empty
 		if (m_Asks.empty())
@@ -549,7 +540,7 @@ namespace MicroEx
 			// Something has seriously gone wrong
 			// log into error
 			// return
-			throw std::runtime_error("Corrupted Order Location Book and Asks Order Book");
+			MICROEX_ERR_FTL("OrderBook[{0}] invariance broken: Corrupted Order Location Book and Asks Order Book", m_UUID);
 		}
 
 		// Pop
@@ -571,7 +562,7 @@ namespace MicroEx
 		return;
 	}
 
-	void OrderBook::RemoveBestBidOrder()
+	void OrderBook::RemoveBestBidOrder() noexcept
 	{
 		// Make sure bid isn't empty
 		if (m_Bids.empty())
@@ -600,7 +591,7 @@ namespace MicroEx
 			// Something has seriously gone wrong
 			// log into error
 			// return
-			throw std::runtime_error("Corrupted Order Location Book and Bids Order Book");
+			MICROEX_ERR_ERR("OrderBook[{0}] invariance broken: Corrupted Order Location Book and Bids Order Book", m_UUID);
 		}
 
 		// pop
@@ -622,7 +613,7 @@ namespace MicroEx
 		return;
 	}
 
-	void OrderBook::RemoveBestAskLevel()
+	void OrderBook::RemoveBestAskLevel() noexcept
 	{
 		// Make sure asks isn't empty
 		if (m_Asks.empty())
@@ -636,7 +627,7 @@ namespace MicroEx
 			this->RemoveBestAskOrder();
 	}
 
-	void OrderBook::RemoveBestBidLevel()
+	void OrderBook::RemoveBestBidLevel() noexcept
 	{
 		// Make sure bids isn't empty
 		if (m_Bids.empty())
@@ -650,7 +641,7 @@ namespace MicroEx
 			this->RemoveBestBidOrder();
 	}
 
-	void OrderBook::RemoveAskLevel(price_t price)
+	void OrderBook::RemoveAskLevel(price_t price) noexcept
 	{
 		if (m_Asks.empty() || !price.IsValid())
 			return;
@@ -668,7 +659,7 @@ namespace MicroEx
 		}
 	}
 
-	void OrderBook::RemoveBidLevel(price_t price)
+	void OrderBook::RemoveBidLevel(price_t price) noexcept
 	{
 		if (m_Asks.empty() || !price.IsValid())
 			return;
@@ -684,6 +675,45 @@ namespace MicroEx
 
 			this->CancelBid(q.front().OrderID);
 		}
+	}
+	 
+	void OrderBook::RemoveAllAsks() noexcept
+	{
+		MICROEX_LOG_CR_WRN("OrderBook[{0}] Removing All Asks", m_UUID);
+		
+		for (auto it = m_OrderLocations.begin(); it != m_OrderLocations.end();)
+		{
+			if (it->second.Side == OrderSide::Seller)
+				it = m_OrderLocations.erase(it);
+			else
+				++it;
+		}
+
+		m_Asks.clear();
+	}
+
+	void OrderBook::RemoveAllBids() noexcept
+	{
+		MICROEX_LOG_CR_WRN("OrderBook[{0}] Removing All Bids", m_UUID);
+
+		for (auto it = m_OrderLocations.begin(); it != m_OrderLocations.end();)
+		{
+			if (it->second.Side == OrderSide::Buyer)
+				it = m_OrderLocations.erase(it);
+			else
+				++it;
+		}
+
+		m_Bids.clear();
+	}
+
+	void OrderBook::RemoveAllOrders() noexcept
+	{
+		MICROEX_LOG_CR_WRN("OrderBook[{0}] Removing All Orders", m_UUID);
+	
+		m_Asks.clear();
+		m_Bids.clear();
+		m_OrderLocations.clear();
 	}
 
 }

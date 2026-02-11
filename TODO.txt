@@ -65,4 +65,6 @@ This file documents non-critical, improvement-oriented TODOs for the OrderBook a
 
 16. Find a way around dual conversion in Price == double in Price class.
 
+17. Refactor Post* (error) functions to include variadic arguments
+
 NOTE: None of the above TODOs block correctness of the current OrderBook. They exist to improve clarity, safety, performance, and long-term maintainability.

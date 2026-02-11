@@ -226,6 +226,26 @@ namespace MicroEx::ValueTypes
 		return lhs.Get() != rhs.Get();
 	}
 
+	inline bool operator>(const Price& lhs, const Price& rhs) noexcept
+	{
+		return lhs.Get() > rhs.Get();
+	}
+
+	inline bool operator<(const Price& lhs, const Price& rhs) noexcept
+	{
+		return lhs.Get() < rhs.Get();
+	}
+
+	inline bool operator>=(const Price& lhs, const Price& rhs) noexcept
+	{
+		return lhs.Get() >= rhs.Get();
+	}	
+
+	inline bool operator<=(const Price& lhs, const Price& rhs) noexcept
+	{
+		return lhs.Get() <= rhs.Get();
+	}
+
 	inline const Price ZeroPrice = Price(0.0);
 	inline const Price InvalidPrice = Price::Invalid();
 
